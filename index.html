@@ -520,4 +520,114 @@ code.inline{
 })();
 </script>
 
+<!-- Sabit müzik paneli -->
+<div id="music-panel">
+  <button id="music-button" type="button">
+    ▶ Müziği başlat
+  </button>
+  <div id="music-player"></div>
+</div>
+
+<style>
+  #music-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 9999;
+    width: 280px;
+    padding: 12px;
+    background: #171614;
+    border: 1px solid #a85e43;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px #0008;
+    color: #f3e6d2;
+  }
+
+  #music-button {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #a85e43;
+    border-radius: 8px;
+    background: #26211e;
+    color: #f3e6d2;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  #music-button:hover {
+    background: #3a2b25;
+  }
+
+  #music-player iframe {
+    display: block;
+    width: 100%;
+    height: 158px;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 8px;
+  }
+
+  #music-player:empty {
+    display: none;
+  }
+</style>
+
+
+<script>
+  const musicBtn = document.getElementById("music-btn");
+  const musicPlayer = document.getElementById("music-player");
+  let player;
+  let started = false;
+
+  musicBtn.addEventListener("click", () => {
+    if (started) {
+      if (player.getPlayerState() === 1) {
+        player.pauseVideo();
+        musicBtn.textContent = "▶ Müziği başlat";
+      } else {
+        player.playVideo();
+        musicBtn.textContent = "⏸ Müziği duraklat";
+      }
+      return;
+    }
+
+    started = true;
+    musicBtn.textContent = "♫ Yükleniyor...";
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = () => {
+      player = new YT.Player("music-player", {
+        width: "280",
+        height: "158",
+        videoId: "Rum1KeTkTV4",
+        playerVars: {
+          autoplay: 1,
+          start: 0,
+          controls: 1,
+          playsinline: 1
+        },
+        events: {
+          onReady: (event) => {
+            event.target.setVolume(40);
+            event.target.playVideo();
+            musicBtn.textContent = "⏸ Müziği duraklat";
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PAUSED ||
+                event.data === YT.PlayerState.ENDED) {
+              musicBtn.textContent = "▶ Müziği başlat";
+            } else if (event.data === YT.PlayerState.PLAYING) {
+              musicBtn.textContent = "⏸ Müziği duraklat";
+            }
+          }
+        }
+      });
+    };
+  });
+</script>
+
+
 </body></html>
