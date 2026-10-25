@@ -573,61 +573,109 @@ code.inline{
 </style>
 
 
-<script>
-  const musicBtn = document.getElementById("music-btn");
-  const musicPlayer = document.getElementById("music-player");
-  let player;
-  let started = false;
 
-  musicBtn.addEventListener("click", () => {
-    if (started) {
-      if (player.getPlayerState() === 1) {
-        player.pauseVideo();
-        musicBtn.textContent = "▶ Müziği başlat";
-      } else {
-        player.playVideo();
-        musicBtn.textContent = "⏸ Müziği duraklat";
+<div id="music-panel">
+  <button id="music-btn" type="button">♫ Müziği başlat</button>
+  <div id="music-player"></div>
+</div>
+
+<style>
+  #music-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 99999;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #ff6b35;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+  }
+
+  #music-btn {
+    background: #ff6b35;
+    color: #111;
+    border: 0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #music-player iframe {
+    display: block;
+    width: 280px;
+    height: 158px;
+    margin-top: 10px;
+    border: 0;
+  }
+</style>
+
+<script>
+(() => {
+  const btn = document.getElementById("music-btn");
+  const playerBox = document.getElementById("music-player");
+  let player;
+  let ready = false;
+  let playing = false;
+
+  // YouTube API'yi güvenli şekilde yükle
+  window.onYouTubeIframeAPIReady = function () {
+    player = new YT.Player("music-player", {
+      width: "280",
+      height: "158",
+      videoId: "Rum1KeTkTV4",
+      playerVars: {
+        autoplay: 1,
+        controls: 1,
+        playsinline: 1,
+        start: 0,
+        origin: window.location.origin
+      },
+      events: {
+        onReady: function (event) {
+          ready = true;
+          event.target.setVolume(40);
+          event.target.playVideo();
+          btn.textContent = "♫ Müziği başlat";
+        },
+        onStateChange: function (event) {
+          playing = event.data === YT.PlayerState.PLAYING;
+          btn.textContent = playing
+            ? "⏸ Müziği duraklat"
+            : "♫ Müziği başlat";
+        },
+        onAutoplayBlocked: function () {
+          btn.textContent = "▶ Başlatmak için tıkla";
+        },
+        onError: function () {
+          btn.textContent = "Müzik açılamadı — tekrar dene";
+        }
       }
+    });
+  };
+
+  btn.addEventListener("click", function () {
+    if (!ready || !player) {
+      btn.textContent = "♫ Yükleniyor...";
       return;
     }
 
-    started = true;
-    musicBtn.textContent = "♫ Yükleniyor...";
-
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-
-    window.onYouTubeIframeAPIReady = () => {
-      player = new YT.Player("music-player", {
-        width: "280",
-        height: "158",
-        videoId: "Rum1KeTkTV4",
-        playerVars: {
-          autoplay: 1,
-          start: 0,
-          controls: 1,
-          playsinline: 1
-        },
-        events: {
-          onReady: (event) => {
-            event.target.setVolume(40);
-            event.target.playVideo();
-            musicBtn.textContent = "⏸ Müziği duraklat";
-          },
-          onStateChange: (event) => {
-            if (event.data === YT.PlayerState.PAUSED ||
-                event.data === YT.PlayerState.ENDED) {
-              musicBtn.textContent = "▶ Müziği başlat";
-            } else if (event.data === YT.PlayerState.PLAYING) {
-              musicBtn.textContent = "⏸ Müziği duraklat";
-            }
-          }
-        }
-      });
-    };
+    if (playing) {
+      player.pauseVideo();
+    } else {
+      player.setVolume(40);
+      player.playVideo();
+    }
   });
+
+  const api = document.createElement("script");
+  api.src = "https://www.youtube.com/iframe_api";
+  api.async = true;
+  document.head.appendChild(api);
+})();
 </script>
+
 
 
 </body></html>
