@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ağ Yapısı ve Katmanlar — Onur Tepe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  --warn:#9a7b2f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    --warn:#d6ad5e;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  --warn:#d6ad5e;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  margin:0;
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+a{color:inherit}
+
+.wrap{max-width:820px;margin:0 auto;padding-block:36px 90px}
+
+/* ---- nav ---- */
+.topnav{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:12px 0 28px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);margin-bottom:40px;
+}
+.brand{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;letter-spacing:.06em;color:var(--muted);
+  display:flex;align-items:center;gap:8px;text-decoration:none;
+}
+.brand::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.navlinks{display:flex;gap:22px;flex-wrap:wrap}
+.navlinks a{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;border-bottom:1px solid transparent;
+  padding-bottom:2px;transition:color .15s, border-color .15s;
+}
+.navlinks a:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ---- hero ---- */
+.hero{display:flex;gap:28px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.avatar{
+  width:84px;height:84px;border-radius:50%;flex:none;
+  background:linear-gradient(145deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--ink) 15%));
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Fraunces", Georgia, serif;font-weight:600;font-size:28px;
+  color:var(--accent-ink);
+  box-shadow:0 0 0 1px var(--line), 0 8px 24px -8px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.hero-text{min-width:0;flex:1}
+.kicker{
+  display:flex;align-items:center;gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;
+}
+.kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+h1{
+  font-family:"Fraunces", Georgia, serif;font-weight:600;
+  font-size:clamp(26px,5vw,38px);line-height:1.1;letter-spacing:-.01em;
+  margin:0 0 8px;text-wrap:balance;
+}
+.role{font-size:16px;color:var(--muted);margin:0}
+.role strong{color:var(--ink);font-weight:600}
+
+section{margin-top:48px}
+.s-head{
+  display:flex;align-items:baseline;gap:14px;
+  border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:22px;
+}
+.s-num{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;color:var(--accent);flex:none}
+h2{font-family:"Fraunces", Georgia, serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em}
+h3{font-family:"Fraunces", Georgia, serif;font-weight:600;font-size:17px;margin:24px 0 10px;color:var(--ink)}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+ul, ol{margin:0 0 18px;padding-left:20px;line-height:1.65;font-size:15.5px}
+li{margin-bottom:6px}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+pre, code.block{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--code-bg);color:var(--code-fg);
+  padding:16px 18px;border-radius:10px;font-size:13px;
+  line-height:1.6;overflow-x:auto;margin:16px 0;
+  border:1px solid var(--line);
+}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:.9em;
+}
+
+table{
+  width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;
+  background:var(--surface);border-radius:8px;overflow:hidden;
+  border:1px solid var(--line);
+}
+th, td{
+  padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);
+}
+th{
+  background:color-mix(in srgb, var(--line) 30%, transparent);
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);
+}
+tr:last-child td{border-bottom:none}
+
+.footer{
+  margin-top:70px;padding-top:22px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;color:var(--muted);
+}
+.back-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;
+  color:var(--accent);text-decoration:none;margin-bottom:24px;
+}
+.back-btn:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav class="topnav">
+    <a href="Onur Tepe.html" class="brand">onurtepe.sec</a>
+    <div class="navlinks">
+      <a href="Onur Tepe.html#about">Hakkımda</a>
+      <a href="Onur Tepe.html#skills">Uzmanlık</a>
+      <a href="Onur Tepe.html#research">Araştırmalar</a>
+      <a href="Onur Tepe.html#certs">Sertifikalar</a>
+      <a href="Onur Tepe.html#contact">İletişim</a>
+    </div>
+  </nav>
+
+  <a href="Onur Tepe.html#research" class="back-btn">← Araştırmalara Dön</a>
+
+  <header class="hero">
+    <div class="avatar">NET</div>
+    <div class="hero-text">
+      <div class="kicker">Ağ Mimarisi · OSI & TCP/IP</div>
+      <h1>Ağ Yapısı ve Katmanlar</h1>
+      <p class="role">Onur Tepe · <strong>Siber Güvenlik Dokümantasyonu</strong></p>
+    </div>
+  </header>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Fiziksel Katman</h2></div>
+    <p><strong>Görevi:</strong> Bitleri (0 ve 1) sinyale çevirip iletim ortamından taşımak.</p>
+    <ul>
+      <li><strong>Bakır kablo:</strong> UTP (Cat5e, Cat6, Cat6a), koaksiyel. Elektrik sinyali kullanır. Ethernet’te tipik sınır 100 metredir.</li>
+      <li><strong>Fiber optik:</strong> Işık darbeleriyle taşır. Single-mode uzun mesafe, multi-mode kısa mesafe içindir. Girişimden etkilenmez, hızı yüksektir.</li>
+      <li><strong>Kablosuz:</strong> Radyo dalgaları (Wi-Fi 2.4/5/6 GHz, Bluetooth, hücresel ağlar).</li>
+      <li><strong>Kodlama ve modülasyon:</strong> Bitlerin sinyale çevrilme yöntemi (Manchester kodlama, QAM vb.).</li>
+      <li><strong>Ölçütler:</strong> Bant genişliği (teorik kapasite), throughput (gerçek hız), gecikme (latency), jitter (gecikme değişkenliği), paket kaybı.</li>
+      <li><strong>Cihazlar:</strong> Kablo, konnektör, repeater, hub (gelen sinyali tüm portlara çoğaltır, artık kullanılmıyor), <strong>Access Point (AP - kablosuz erişim noktası)</strong>.</li>
+      <li><strong>Topolojiler:</strong> Yıldız (en yaygın), bus, halka, mesh, ağaç.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Veri Bağlantısı Katmanı</h2></div>
+    <p><strong>Görevi:</strong> Aynı yerel ağdaki (LAN) iki cihaz arasında çerçeve iletimi, fiziksel adresleme, hata tespiti.</p>
+    <p>İki alt katmanı vardır: LLC (üst katmanla arayüz) ve MAC (ortama erişim ve adresleme).</p>
+
+    <h3>MAC adresi</h3>
+    <ul>
+      <li>48 bit, hex yazılır: <code class="inline">00:1A:2B:3C:4D:5E</code></li>
+      <li>İlk 24 bit OUI (üretici kodu), son 24 bit cihaza özel numaradır.</li>
+      <li>Broadcast MAC: <code class="inline">FF:FF:FF:FF:FF:FF</code> (ağdaki herkese).</li>
+    </ul>
+
+    <h3>Ethernet çerçevesi (Ethernet II)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Alan</th>
+          <th>Boyut</th>
+          <th>Açıklama</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Preamble + SFD</td>
+          <td>8 bayt</td>
+          <td>Senkronizasyon</td>
+        </tr>
+        <tr>
+          <td>Hedef MAC</td>
+          <td>6 bayt</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>Kaynak MAC</td>
+          <td>6 bayt</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>EtherType</td>
+          <td>2 bayt</td>
+          <td>Üstte ne var (0x0800 = IPv4, 0x86DD = IPv6, 0x0806 = ARP)</td>
+        </tr>
+        <tr>
+          <td>Veri (payload)</td>
+          <td>46–1500 bayt</td>
+          <td>MTU = 1500</td>
+        </tr>
+        <tr>
+          <td>FCS (CRC)</td>
+          <td>4 bayt</td>
+          <td>Hata kontrolü</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Hata bulunursa çerçeve sessizce atılır. Tekrar gönderme işini üst katman (TCP) yapar.</p>
+
+    <h3>Switch nasıl çalışır?</h3>
+    <ul>
+      <li><strong>Öğrenir:</strong> Gelen çerçevenin kaynak MAC’ini, geldiği porta eşleyip MAC tablosuna yazar.</li>
+      <li><strong>İletir:</strong> Hedef MAC tabloda varsa sadece o porta gönderir.</li>
+      <li><strong>Taşırır (flooding):</strong> Hedef bilinmiyorsa veya broadcast ise gelen port hariç tüm portlara yollar.</li>
+    </ul>
+    <p>Hub’dan farkı: her port ayrı çarpışma alanıdır, trafik yalnızca gerekli yere gider.</p>
+
+    <h3>Diğer önemli konular</h3>
+    <ul>
+      <li><strong>ARP (Address Resolution Protocol):</strong> IP’den MAC’i bulur. “Bu IP kimde?” diye broadcast atılır, sahibi unicast cevap verir. Sonuç ARP önbelleğinde tutulur.</li>
+      <li><strong>VLAN (802.1Q):</strong> Tek fiziksel switch’i mantıksal ağlara böler. Çerçeveye 4 baytlık etiket eklenir (12 bitlik VLAN ID, yaklaşık 4094 kullanılabilir VLAN). Broadcast alanlarını küçültür ve güvenliği artırır.</li>
+      <li><strong>STP (Spanning Tree, 802.1D):</strong> Switch’ler arası döngüleri (loop) engeller. Fazla yolları mantıksal olarak kapatır, arıza olunca açar.</li>
+      <li><strong>Ortama erişim:</strong> Eski paylaşımlı Ethernet’te CSMA/CD kullanılırdı. Günümüzde full-duplex switch bağlantılarında çarpışma yoktur. Wi-Fi’da CSMA/CA kullanılır (çarpışmayı önlemeye çalışır).</li>
+      <li><strong>Wi-Fi (IEEE 802.11):</strong> b, a, g, n, ac, ax (Wi-Fi 6), be (Wi-Fi 7). Güvenlik: WEP (kırık, kullanılmaz), WPA2, WPA3. SSID ağ adıdır, erişim noktası (AP) kablosuz istemcileri ağa bağlar.</li>
+      <li><strong>Diğer:</strong> PPP/PPPoE (DSL bağlantıları), LACP (birden çok kabloyu birleştirme).</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Ağ Katmanı (İnternet Katmanı)</h2></div>
+    <p><strong>Görevi:</strong> Paketleri farklı ağlar arasında kaynaktan hedefe ulaştırmak (mantıksal adresleme + yönlendirme). Best-effort çalışır: teslim garantisi vermez.</p>
+
+    <h3>IPv4</h3>
+    <p>32 bit adres, 4 oktet: <code class="inline">192.168.1.10</code></p>
+    <p>IPv4 başlığı (en az 20 bayt) alanları:</p>
+    <ul>
+      <li>Versiyon (4), IHL (başlık uzunluğu), DSCP/ECN (hizmet kalitesi)</li>
+      <li>Toplam uzunluk</li>
+      <li>Identification, Flags, Fragment Offset (parçalama için)</li>
+      <li>TTL: Her router’da 1 azalır, 0 olunca paket atılır (sonsuz döngüyü engeller)</li>
+      <li>Protocol: Üst katman protokolü (1 = ICMP, 6 = TCP, 17 = UDP)</li>
+      <li>Başlık sağlama toplamı</li>
+      <li>Kaynak IP, Hedef IP</li>
+    </ul>
+    <p>Özel (private) adres blokları:</p>
+    <ul>
+      <li><code class="inline">10.0.0.0/8</code></li>
+      <li><code class="inline">172.16.0.0/12</code></li>
+      <li><code class="inline">192.168.0.0/16</code></li>
+    </ul>
+    <p>Diğer özel adresler: <code class="inline">127.0.0.0/8</code> (loopback, kendi cihazın), <code class="inline">169.254.0.0/16</code> (APIPA, DHCP bulunamayınca otomatik).</p>
+
+    <h3>Alt ağlar (subnetting) ve CIDR</h3>
+    <p>Adres ikiye ayrılır: ağ kısmı + host kısmı. Alt ağ maskesi veya /n gösterimi bunu belirler.</p>
+    <p>Örnek: <code class="inline">192.168.1.0/24</code> (maske 255.255.255.0)</p>
+    <ul>
+      <li>Toplam adres: 2⁸ = 256</li>
+      <li>Kullanılabilir host: 256 − 2 = 254 (biri ağ adresi .0, biri broadcast .255)</li>
+    </ul>
+    <p>Bunu /26’ya bölersek (maske 255.255.255.192):</p>
+    <ul>
+      <li>4 alt ağ, her birinde 64 adres, 62 host</li>
+      <li>192.168.1.0/26, .64/26, .128/26, .192/26</li>
+    </ul>
+    <p>Formül: kullanılabilir host = 2^(host bit sayısı) − 2.</p>
+    <p>(Eski sınıf sistemi A/B/C artık yerine CIDR kullanılır, esnek uzunlukta öneklere izin verir.)</p>
+
+    <h3>NAT / PAT</h3>
+    <p>Evdeki özel IP’ler, router’ın tek genel (public) IP’si arkasında paylaşılır. Router, port numaralarıyla hangi iç cihaza ait olduğunu takip eder. IPv4 adres azlığını geçici olarak çözmüştür ama uçtan uca bağlantıyı zorlaştırır.</p>
+
+    <h3>ICMP</h3>
+    <p>Hata ve kontrol mesajları taşır: Echo Request/Reply (ping), Destination Unreachable, Time Exceeded (traceroute bunu kullanır), Redirect. Veri taşımaz, ağ teşhisi içindir.</p>
+
+    <h3>IPv6</h3>
+    <ul>
+      <li>128 bit adres, hex yazılır: <code class="inline">2001:0db8:0000:0000:0000:0000:0000:0001</code> → kısaltılmış <code class="inline">2001:db8::1</code></li>
+      <li>Sabit 40 baytlık basit başlık, parçalamayı sadece kaynak yapar</li>
+      <li>Broadcast yoktur; unicast, multicast, anycast vardır</li>
+      <li>Link-local: fe80::/10, global unicast: 2000::/3</li>
+      <li>ARP yerine NDP (Neighbor Discovery Protocol)</li>
+      <li>SLAAC ile otomatik adres yapılandırma</li>
+      <li>IPv6'da NAT’a ihtiyaç yoktur</li>
+    </ul>
+
+    <h3>Yönlendirme (routing)</h3>
+    <p>Router, yönlendirme tablosuna bakar ve en uzun önek eşleşmesi (longest prefix match) kuralıyla bir sonraki sıçramayı (next hop) seçer. Eşleşme yoksa varsayılan ağ geçidine (default gateway) yollar.</p>
+    <ul>
+      <li><strong>Statik:</strong> Elle yazılır.</li>
+      <li><strong>Dinamik:</strong> Router’lar birbirine bilgi aktarır.</li>
+      <li><strong>Distance Vector:</strong> RIP (en fazla 15 hop)</li>
+      <li><strong>Link State:</strong> OSPF (tüm ağ haritasını çıkarır, Dijkstra algoritması kullanır)</li>
+      <li><strong>Path Vector:</strong> BGP. İnternet üzerindeki otonom sistemler (AS) arasında yönlendirme yapar, internetin omurgasıdır (TCP 179).</li>
+      <li>IGP (ağ içi: RIP, OSPF, EIGRP) ve EGP (ağlar arası: BGP) olarak ayrılır.</li>
+    </ul>
+
+    <h3>Güvenlik</h3>
+    <p><strong>IPsec:</strong> IP seviyesinde şifreleme ve kimlik doğrulama, VPN’lerde yaygındır.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Taşıma Katmanı</h2></div>
+    <p><strong>Görevi:</strong> Uçtan uca iletişim, uygulamaya ulaştırma (port numaraları), isteğe bağlı güvenilirlik.</p>
+
+    <h3>Port numaraları (16 bit, 0–65535)</h3>
+    <ul>
+      <li>0–1023: Bilinen (well-known) portlar</li>
+      <li>1024–49151: Kayıtlı portlar</li>
+      <li>49152–65535: Dinamik/geçici portlar</li>
+    </ul>
+    <p>Soket = IP adresi + port + protokol</p>
+    <p>Aynı cihazda birden çok uygulama çalıştığı için port, veriyi doğru uygulamaya yönlendirir (multiplexing/demultiplexing).</p>
+
+    <h3>TCP (Transmission Control Protocol)</h3>
+    <p>Bağlantılı, güvenilir, sıralı, akış tabanlı.</p>
+    <p>Başlık alanları (en az 20 bayt): Kaynak/hedef port, sıra numarası (seq), onay numarası (ack), bayrak (flag) bitleri, pencere boyutu (window), sağlama toplamı, seçenekler (MSS, Window Scale, SACK, Timestamps).</p>
+    <p>Bayraklar: SYN (bağlantı başlat), ACK (onay), FIN (kapat), RST (sıfırla/reddet), PSH (hemen ilet), URG.</p>
+
+    <p><strong>Üçlü el sıkışma (bağlantı kurma):</strong></p>
+    <pre>İstemci → SYN (seq=x)
+Sunucu → SYN+ACK (seq=y, ack=x+1)
+İstemci → ACK (ack=y+1)</pre>
+    <p>Bağlantı kapatma: FIN → ACK → FIN → ACK (4 adım). Sonra bir süre TIME_WAIT durumunda beklenir.</p>
+    <p>Önemli TCP durumları: LISTEN, SYN_SENT, SYN_RECEIVED, ESTABLISHED, FIN_WAIT, CLOSE_WAIT, TIME_WAIT.</p>
+
+    <p><strong>Güvenilirlik mekanizmaları:</strong></p>
+    <ul>
+      <li>Sıra numaralarıyla sıralama ve tekrar eden paketleri eleme</li>
+      <li>ACK ile onay, onay gelmezse zaman aşımında yeniden gönderme</li>
+      <li>Hızlı yeniden gönderme: 3 yinelenen ACK gelince beklemeden tekrar yollar</li>
+      <li>Sağlama toplamı ile bozuk veri tespiti</li>
+    </ul>
+    <p><strong>Akış kontrolü (flow control):</strong> Alıcı, pencere boyutu ile “şu kadar daha alabilirim” der. Hızlı gönderici yavaş alıcıyı boğamaz.</p>
+    <p><strong>Tıkanıklık kontrolü (congestion control):</strong> Ağın kapasitesini aşmamak için:</p>
+    <ul>
+      <li>Slow start: Pencere üstel artar</li>
+      <li>Congestion avoidance: Eşikten sonra doğrusal artar</li>
+      <li>Kayıp olunca pencere küçülür, sonra yine artar</li>
+      <li>Algoritmalar: Reno, CUBIC (Linux varsayılanı), BBR</li>
+    </ul>
+
+    <h3>UDP (User Datagram Protocol)</h3>
+    <p>Bağlantısız, güvenilirlik yok, sıralama yok. Başlığı sadece 8 bayt (kaynak port, hedef port, uzunluk, sağlama toplamı). Kayıp olursa uygulama karar verir.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Özellik</th>
+          <th>TCP</th>
+          <th>UDP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bağlantı</td>
+          <td>Var</td>
+          <td>Yok</td>
+        </tr>
+        <tr>
+          <td>Güvenilirlik</td>
+          <td>Var</td>
+          <td>Yok</td>
+        </tr>
+        <tr>
+          <td>Hız / yük</td>
+          <td>Daha yavaş, ağır</td>
+          <td>Hızlı, hafif</td>
+        </tr>
+        <tr>
+          <td>Kullanım</td>
+          <td>Web, e-posta, dosya</td>
+          <td>DNS, VoIP, canlı yayın, oyun</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>QUIC</h3>
+    <p>UDP üzerinde çalışan modern taşıma protokolü. Güvenilirlik, tıkanıklık kontrolü ve TLS 1.3'ü kendi içinde barındırır, bağlantı kurma süresi kısadır. HTTP/3 bunun üzerinde çalışır.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Katman 5–7: Uygulama, Sunum, Oturum Katmanları</h2></div>
+    <p>TCP/IP’de hepsi tek “Uygulama” katmanıdır. OSI mantığıyla:</p>
+    <ul>
+      <li><strong>Oturum (5):</strong> Oturumu açma, sürdürme, kapatma, eşgüdüm (RPC, NetBIOS)</li>
+      <li><strong>Sunum (6):</strong> Veri biçimi, şifreleme, sıkıştırma (TLS, JPEG, MPEG, karakter kodlamaları)</li>
+      <li><strong>Uygulama (7):</strong> Kullanıcıya hizmet sunan protokoller</li>
+    </ul>
+
+    <h3>DNS (Alan Adı Sistemi)</h3>
+    <p>Adları IP’ye çevirir (UDP/TCP 53).</p>
+    <p>Hiyerarşi: Kök (.) → TLD (.com, .tr) → yetkili sunucular (example.com)</p>
+    <p><strong>Sorgu akışı:</strong></p>
+    <ol>
+      <li>Cihaz, recursive resolver’a (ISP veya 8.8.8.8 gibi) sorar.</li>
+      <li>Resolver önbelleğe bakar, yoksa kök sunucuya sorar.</li>
+      <li>Kök, TLD sunucusunu gösterir. TLD, yetkili sunucuyu gösterir.</li>
+      <li>Yetkili sunucu cevabı verir. Resolver önbelleğe alır (TTL süresince).</li>
+    </ol>
+    <p><strong>Kayıt türleri:</strong> A (IPv4), AAAA (IPv6), CNAME (Takma ad), MX (Mail sunucusu), NS (Yetkili ad sunucusu), TXT (Metin - SPF, doğrulama), PTR (IP → ad, ters sorgu), SOA (Bölge bilgisi).</p>
+    <p>Şifreli DNS: DoT (TLS üzerinden), DoH (HTTPS üzerinden).</p>
+
+    <h3>DHCP</h3>
+    <p>Cihaza otomatik IP, maske, ağ geçidi, DNS verir (UDP 67 sunucu, 68 istemci). DORA:</p>
+    <ul>
+      <li><strong>Discover:</strong> İstemci broadcast ile sunucu arar</li>
+      <li><strong>Offer:</strong> Sunucu adres teklif eder</li>
+      <li><strong>Request:</strong> İstemci teklifi ister</li>
+      <li><strong>Acknowledge:</strong> Sunucu onaylar (kiralama süresiyle)</li>
+    </ul>
+
+    <h3>HTTP / HTTPS</h3>
+    <p>İstemci-sunucu, istek-cevap protokolüdür (80, HTTPS için 443).</p>
+    <ul>
+      <li><strong>Metotlar:</strong> GET (oku), POST (gönder/oluştur), PUT (tümünü değiştir), PATCH (kısmen değiştir), DELETE, HEAD, OPTIONS</li>
+      <li><strong>Durum kodları:</strong> 1xx bilgi, 2xx başarılı (200 OK, 201 Created), 3xx yönlendirme (301, 302, 304), 4xx istemci hatası (400, 401, 403, 404, 429), 5xx sunucu hatası (500, 502, 503)</li>
+      <li><strong>Başlıklar:</strong> Host, User-Agent, Content-Type, Cache-Control, Cookie, Authorization</li>
+      <li><strong>Durumsuzdur (stateless):</strong> Oturum bilgisi çerez (cookie) veya token ile tutulur.</li>
+      <li><strong>Sürümler:</strong>
+        <ul>
+          <li>HTTP/1.1: Kalıcı bağlantı, ama istekler sıralı (head-of-line blocking)</li>
+          <li>HTTP/2: İkili biçim, tek bağlantıda çoklama (multiplexing), başlık sıkıştırma (HPACK)</li>
+          <li>HTTP/3: QUIC/UDP üzerinde, TCP’deki sıra tıkanmasını azaltır</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>TLS (HTTPS’in Güvenlik Katmanı)</h3>
+    <p>Üç şeyi sağlar: gizlilik (şifreleme), bütünlük, kimlik doğrulama (sertifika).</p>
+    <ul>
+      <li>Sunucu, bir CA (sertifika otoritesi) tarafından imzalanmış sertifika sunar.</li>
+      <li>Asimetrik şifreleme ile anahtar değişimi yapılır, sonra hızlı simetrik şifreleme (örn. AES) ile veri taşınır.</li>
+      <li>TLS 1.3, el sıkışmasını kısaltmıştır ve eski zayıf algoritmaları kaldırmıştır.</li>
+    </ul>
+
+    <h3>E-posta Protokolleri</h3>
+    <ul>
+      <li><strong>SMTP:</strong> Gönderme ve sunucular arası aktarım (25, istemciden gönderim için 587; 465 örtük TLS)</li>
+      <li><strong>POP3:</strong> Postayı indirir (110, TLS ile 995)</li>
+      <li><strong>IMAP:</strong> Postayı sunucuda tutup senkronize eder (143, TLS ile 993)</li>
+    </ul>
+
+    <h3>Diğer Protokoller</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Protokol</th>
+          <th>Port</th>
+          <th>Görevi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>FTP</td><td>20/21</td><td>Dosya aktarımı (şifresiz)</td></tr>
+        <tr><td>SFTP / SCP</td><td>22</td><td>SSH üzerinden güvenli dosya aktarımı</td></tr>
+        <tr><td>SSH</td><td>22</td><td>Güvenli uzak terminal (Telnet 23'ün güvenli halefi)</td></tr>
+        <tr><td>NTP</td><td>123/UDP</td><td>Saat senkronizasyonu</td></tr>
+        <tr><td>SNMP</td><td>161/162</td><td>Ağ cihazı izleme/yönetimi</td></tr>
+        <tr><td>LDAP</td><td>389</td><td>Dizin servisi</td></tr>
+        <tr><td>SMB</td><td>445</td><td>Windows dosya paylaşımı</td></tr>
+        <tr><td>RDP</td><td>3389</td><td>Windows uzak masaüstü</td></tr>
+        <tr><td>MQTT</td><td>1883</td><td>IoT mesajlaşma</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">06</span><h2>Tüm Resim: Bir Web Sayfası İsteği Baştan Sona</h2></div>
+    <p>Tarayıcıya <code class="inline">https://example.com</code> yazıldığında sırasıyla gerçekleşen işlemler:</p>
+    <ol>
+      <li><strong>DHCP (daha önce):</strong> Cihaz IP, ağ geçidi, DNS adresini almıştır.</li>
+      <li><strong>DNS:</strong> example.com için sorgu gider (UDP 53), IP döner.</li>
+      <li><strong>ARP:</strong> Hedef başka ağdaysa, cihaz ağ geçidinin MAC adresini ARP ile öğrenir.</li>
+      <li><strong>TCP:</strong> SYN, SYN-ACK, ACK ile 443. porta bağlanır.</li>
+      <li><strong>TLS:</strong> Sertifika doğrulanır, anahtarlar üretilir.</li>
+      <li><strong>HTTP:</strong> GET / isteği şifreli kanaldan gider.</li>
+      <li><strong>Yol boyunca:</strong> Her router IP adresine bakar, TTL azaltır, next hop’a yollar. Her atlamada çerçevenin MAC adresleri değişir, IP adresleri sabit kalır (NAT hariç).</li>
+      <li><strong>Cevap:</strong> Sunucu HTML’i yollar. Taşıma katmanı parçaları birleştirir, tarayıcı sayfayı çizer.</li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">07</span><h2>Cihazların Katmanları</h2></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Cihaz</th>
+          <th>Katman</th>
+          <th>Neye Bakar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hub / repeater / Access Point (AP)</td>
+          <td>1</td>
+          <td>Hiçbir şeye (sinyali çoğaltır/kablosuza dönüştürür)</td>
+        </tr>
+        <tr>
+          <td>Switch</td>
+          <td>2</td>
+          <td>MAC adresi</td>
+        </tr>
+        <tr>
+          <td>Router</td>
+          <td>3</td>
+          <td>IP adresi</td>
+        </tr>
+        <tr>
+          <td>L3 switch</td>
+          <td>2 + 3</td>
+          <td>MAC + IP</td>
+        </tr>
+        <tr>
+          <td>Firewall</td>
+          <td>3 – 7</td>
+          <td>IP, port, bazen uygulama içeriği</td>
+        </tr>
+        <tr>
+          <td>Load balancer</td>
+          <td>4 veya 7</td>
+          <td>IP/port veya HTTP içeriği</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="footer">
+    <span>© 2026 Onur Tepe</span>
+    <span>Harvard CS50x Certified</span>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>CRLF Injection</title>
+<style>
+/* Layout: single-column technical dossier — terminal-style header band,
+   numbered findings as the spine, code blocks treated as evidence panels */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  --warn:#9a7b2f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    --warn:#d6ad5e;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  --warn:#d6ad5e;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{max-width:760px;margin:0 auto;padding-block:48px 80px}
+
+.kicker{
+  display:flex;align-items:center;gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:18px;
+}
+.kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+h1{
+  font-family:"Fraunces", Georgia, serif;font-weight:600;
+  font-size:clamp(32px,6vw,48px);line-height:1.05;letter-spacing:-.01em;
+  margin:0 0 14px;text-wrap:balance;
+}
+.dek{font-size:17px;line-height:1.6;color:var(--muted);max-width:60ch;margin:0 0 32px}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;letter-spacing:.03em;padding:5px 11px;
+  border:1px solid var(--line);border-radius:100px;color:var(--muted);background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;align-items:baseline;gap:14px;
+  border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:22px;
+}
+.s-num{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;color:var(--accent);flex:none}
+h2{font-family:"Fraunces", Georgia, serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+.kv{
+  display:grid;grid-template-columns:auto 1fr;gap:6px 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;margin:18px 0;
+}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;color:var(--ink)}
+
+pre{
+  background:var(--code-bg);color:var(--code-fg);border-radius:10px;
+  padding:18px 20px;overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;line-height:1.6;
+  margin:0 0 16px;border:1px solid var(--line);
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+pre .ok{color:var(--ok)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:.9em;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+.code-label.ok{color:var(--ok)}
+
+.finding{
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  padding:20px 22px;margin-bottom:16px;
+}
+.finding h3{
+  font-family:"Fraunces", Georgia, serif;font-size:17px;margin:0 0 8px;
+  display:flex;align-items:center;gap:10px;
+}
+.finding h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;
+  color:var(--accent-ink);background:var(--accent);border-radius:5px;padding:2px 7px;flex:none;
+}
+.finding p{margin-bottom:0;font-size:14.5px}
+.finding p + p{margin-top:8px}
+
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.55;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.checklist .mark{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;color:var(--accent);flex:none;margin-top:2px}
+
+.defense{display:grid;gap:10px}
+.defense-row{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px;border-left:3px solid var(--ok);background:var(--surface);border-radius:0 10px 10px 0}
+.defense-row b{font-size:14.5px}
+.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.5}
+
+/* anatomy diagram */
+.anatomy{
+  border:1px solid var(--line);border-radius:12px;background:var(--code-bg);
+  padding:20px 22px;margin:20px 0;overflow-x:auto;
+}
+.anatomy-line{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;line-height:2.1;
+  color:var(--code-fg);white-space:pre;display:flex;align-items:center;gap:10px;
+}
+.anatomy-line .crlf{
+  color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:0 5px;font-size:11px;letter-spacing:.03em;
+}
+
+/* scenario cards */
+.scenario{
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  padding:20px 22px;margin-bottom:14px;
+}
+.scenario-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.scenario-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;
+  color:var(--accent-ink);background:var(--accent);border-radius:5px;padding:2px 8px;flex:none;
+}
+.scenario h3{font-family:"Fraunces", Georgia, serif;font-size:16.5px;margin:0;font-weight:600}
+.scenario p{font-size:14px;margin-bottom:10px}
+
+/* encoding variants table */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:480px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line)}
+th{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);background:var(--surface);
+}
+tr:last-child td{border-bottom:none}
+td{color:var(--ink)}
+td.muted{color:var(--muted);font-size:13px}
+td code{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;color:var(--accent)}
+
+.note{
+  margin-top:56px;padding:18px 20px;border:1px dashed var(--line);border-radius:10px;
+  font-size:14px;color:var(--muted);line-height:1.6;
+}
+.note b{color:var(--ink)}
+
+@media (max-width:520px){
+  .kv{grid-template-columns:1fr;font-size:12.5px}
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Zafiyet Notu</div>
+  <h1>CRLF Injection</h1>
+  <p class="dek">Satır sonu karakterlerinin (\r\n) temizlenmeden HTTP başlığına veya log'a yazılması — saldırganın kendi başlıklarını, sahte log kayıtlarını ve bazen tam bir XSS zincirini enjekte edebilmesi.</p>
+
+  <div class="meta-row">
+    <span class="chip">\r\n Enjeksiyonu</span>
+    <span class="chip">HTTP Response Splitting</span>
+    <span class="chip">Log Forging</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Mekanizma</h2></div>
+    <p>CRLF, <strong>Carriage Return + Line Feed</strong> karakterlerinin kısaltmasıdır — <code class="inline">CR = \r = %0d</code> (satır başı), <code class="inline">LF = \n = %0a</code> (yeni satır). HTTP protokolü, başlıkları ve gövdeyi bu iki karakterle ayırır.</p>
+
+    <div class="anatomy">
+      <div class="anatomy-line">HTTP/1.1 200 OK<span class="crlf">CRLF</span></div>
+      <div class="anatomy-line">Content-Type: text/html<span class="crlf">CRLF</span></div>
+      <div class="anatomy-line">Set-Cookie: oturum=abc123<span class="crlf">CRLF</span></div>
+      <div class="anatomy-line"><span class="crlf">CRLF</span> <span style="color:var(--code-dim)">— boş satır, gövde başlar</span></div>
+      <div class="anatomy-line">&lt;html&gt;...&lt;/html&gt;</div>
+    </div>
+
+    <p class="lede">Her başlık <code class="inline">\r\n</code> ile biter, başlıklar bittikten sonra boş bir satır (<code class="inline">\r\n\r\n</code>) gelir ve gövde başlar. <strong>Kök neden:</strong> uygulama kullanıcı girdisini temizlemeden bir başlığa veya log gibi satır tabanlı bir yapıya yazarsa, saldırgan kendi <code class="inline">\r\n</code> karakterlerini sokarak yeni satır/başlık üretebilir.</p>
+
+    <div class="code-label bad"><span class="dot"></span>Zafiyetli kullanım</div>
+    <pre>Location: /sayfa?dil=<span class="hl">&lt;kullanici_girdisi&gt;</span></pre>
+    <p class="lede">Girdi doğrulanmadığında, kullanıcı içine <code class="inline">%0d%0a</code> koyarak başlığı bitirebilir ve ardından kendi başlıklarını ekleyebilir. Sunucu bunu tek bir değer yerine birden fazla başlık olarak yorumlar.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Saldırı Türleri</h2></div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">1</span><h3>HTTP Response Splitting</h3></div>
+      <p>Saldırgan yanıtı iki ayrı yanıta bölmeyi hedefler. Başlıkları <code class="inline">\r\n\r\n</code> ile erkenden bitirip gövdeyi kendi içeriğiyle doldurur, hatta ikinci bir tam HTTP yanıtı oluşturabilir.</p>
+      <p class="lede">Ara katmanlarda (proxy, cache) bu <strong>cache poisoning</strong>'e yol açabilir: saldırganın ürettiği sahte yanıt meşru bir URL için önbelleğe alınır ve diğer kullanıcılara sunulur.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">2</span><h3>Başlık Enjeksiyonu</h3></div>
+      <p>Yanıta sahte başlık eklenir. Üç tipik etki:</p>
+      <ul class="checklist">
+        <li><span class="mark">—</span><span><strong>Set-Cookie enjeksiyonu:</strong> kurbanın tarayıcısına saldırganın seçtiği bir çerez yazdırma (session fixation).</span></li>
+        <li><span class="mark">—</span><span><strong>Location değiştirme:</strong> kullanıcıyı farklı bir adrese yönlendirme.</span></li>
+        <li><span class="mark">—</span><span><strong>Güvenlik başlıklarını etkisizleştirme:</strong> yanıta sahte Content-Type eklemek gibi.</span></li>
+      </ul>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">3</span><h3>XSS'e Dönüşme</h3></div>
+      <p>Başlıklar bittikten sonra gövde saldırganın kontrolüne geçerse, yanıt içine script yerleştirilebilir. Tarayıcı bunu meşru site içeriği sanarak çalıştırır — CRLF bazı durumlarda yansıtılmış XSS'e eşdeğer etki yaratır.</p>
+      <p class="lede">Modern tarayıcıların XSS filtreleri ve güvenlik başlıkları (CSP) bu riski bir miktar azaltır.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">4</span><h3>Log Injection (Log Forging)</h3></div>
+      <p>Uygulama kullanıcı girdisini log dosyasına satır satır yazıyorsa, saldırgan <code class="inline">\r\n</code> ekleyerek sahte log kayıtları üretebilir.</p>
+      <div class="code-label bad"><span class="dot"></span>Normal log</div>
+      <pre>2026-10-25 23:00 INFO Kullanici giris yapti: ahmet</pre>
+      <div class="code-label bad"><span class="dot"></span>Enjeksiyon sonrası</div>
+      <pre>2026-10-25 23:00 INFO Kullanici giris yapti: ahmet
+2026-10-25 23:00 INFO <span class="hl">Yonetici girisi basarili: admin</span></pre>
+      <p class="lede">Bu, adli analizi yanıltır, izleri örter veya log analiz araçlarını (SIEM) manipüle eder.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">5</span><h3>E-posta / SMTP Başlık Enjeksiyonu</h3></div>
+      <p>İletişim formunda "konu" veya "gönderen" alanına CRLF sokularak <code class="inline">Bcc:</code>, <code class="inline">Cc:</code> gibi ek başlıklar eklenebilir. Sonuç: form, spam gönderen bir araca dönüşür. PHP <code class="inline">mail()</code> fonksiyonunun geçmişte sık görülen bir sorunudur.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">6</span><h3>Diğer Protokol Enjeksiyonları</h3></div>
+      <p>CRLF ayracı kullanan diğer metin tabanlı protokollerde (SMTP, IMAP, Redis, FTP, Memcached) de benzer enjeksiyon mümkündür. Özellikle bir SSRF zafiyetiyle birleştiğinde saldırgan iç ağdaki bir servise kendi komutlarını enjekte edebilir — CRLF'nin SSRF'in etkisini büyüttüğü klasik bir örnek.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Kodlama ve Atlatma Varyasyonları</h2></div>
+    <p class="lede">Filtreler genellikle düz <code class="inline">\r\n</code> karakterlerine bakar. Saldırganlar bu yüzden farklı gösterimleri dener — bu çeşitlilik, kara liste (blacklist) tabanlı savunmaların neden güvenilmez olduğunu gösterir.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Gösterim</th><th>Anlamı</th></tr></thead>
+        <tbody>
+          <tr><td><code>%0d%0a</code></td><td class="muted">Standart URL kodlaması</td></tr>
+          <tr><td><code>%0D%0A</code></td><td class="muted">Büyük harf varyasyonu</td></tr>
+          <tr><td><code>%250d%250a</code></td><td class="muted">Çift kodlama (decode iki kez yapılırsa)</td></tr>
+          <tr><td><code>\r\n</code></td><td class="muted">Ham karakterler</td></tr>
+          <tr><td><code>%E5%98%8A%E5%98%8D</code></td><td class="muted">Unicode karakterlerin kesilmesinden doğan varyasyonlar</td></tr>
+          <tr><td>Yalnızca <code>%0a</code> (LF)</td><td class="muted">Bazı sunucular tek LF'yi de satır sonu sayar</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Savunma Yöntemleri</h2></div>
+
+    <div class="finding">
+      <h3><span class="idx">1</span>Girdiyi temizleme ve doğrulama</h3>
+      <p><code class="inline">\r</code> ve <code class="inline">\n</code> karakterlerini başlık değerlerine girmeden önce reddedin veya kaldırın. Mümkünse kaldırmak yerine <strong>reddetmek</strong> daha güvenlidir, çünkü kaldırma işlemi atlatma fırsatı doğurabilir.</p>
+      <div class="code-label ok"><span class="dot"></span>Python</div>
+      <pre>def temizle(deger):
+    if '\r' in deger or '\n' in deger:
+        raise ValueError(<span class="ok">"Gecersiz karakter"</span>)
+    return deger</pre>
+    </div>
+
+    <div class="defense">
+      <div class="defense-row"><b>Güncel framework ve kütüphaneler</b><span>Django, Flask, Express, Spring, ASP.NET Core, PHP 5.1.2+ başlık değerlerinde CRLF'yi varsayılan olarak engeller. Ham string birleştirmeyle başlık üretmek yerine framework'ün başlık API'sini kullanın.</span></div>
+      <div class="defense-row"><b>Kullanıcı girdisini başlığa koymaktan kaçının</b><span>Yönlendirme gibi durumlarda değeri önceden tanımlı bir listeden seçtirin veya doğru şekilde URL kodlayın.</span></div>
+      <div class="defense-row"><b>Çıktı kodlaması</b><span>Girdi başlığa veya log'a yazılırken bağlama uygun kodlama uygulayın; CR/LF karakterlerini kaçış dizisine çevirin (<code class="inline">\\r</code>, <code class="inline">\\n</code>).</span></div>
+      <div class="defense-row"><b>Güvenli loglama</b><span>Log kayıtlarında satır sonlarını temizleyin veya kodlayın; yapılandırılmış (JSON) loglama kullanın — her kayıt ayrı bir nesne olduğundan satır enjeksiyonu etkisiz kalır.</span></div>
+      <div class="defense-row"><b>Ek katmanlar</b><span>WAF kuralları ve CSP başarılı bir enjeksiyonun etkisini azaltır ama tek başına yeterli değildir; proxy/cache katmanında yanıt bütünlüğünü doğrulayın.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Savunma Amaçlı Test</h2></div>
+    <p class="lede">Kendi uygulamanızda (yalnızca yetkiniz olan sistemlerde) şunlara bakabilirsiniz:</p>
+    <ul class="checklist">
+      <li><span class="mark">01</span><span>Kullanıcı girdisinin yanıt başlıklarına yansıdığı noktaları belirleyin (yönlendirmeler, çerez değerleri, özel başlıklar).</span></li>
+      <li><span class="mark">02</span><span>Bu parametrelere <code class="inline">%0d%0a</code> içeren zararsız bir test değeri verip yanıt başlıklarında beklenmeyen yeni bir başlık oluşup oluşmadığını gözleyin.</span></li>
+      <li><span class="mark">03</span><span>Burp Suite, OWASP ZAP veya benzeri tarayıcılar bu kontrolü otomatik yapar.</span></li>
+      <li><span class="mark">04</span><span>Kod incelemesinde, başlık veya log yazan yerlerde ham string birleştirmeyi arayın.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">06</span><h2>Özet Tablo</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Saldırı</th><th>Etkisi</th><th>Ana Savunma</th></tr></thead>
+        <tbody>
+          <tr><td>Response splitting</td><td>Cache poisoning, sahte yanıt</td><td class="muted">Başlıkta CR/LF reddetme</td></tr>
+          <tr><td>Header injection</td><td>Session fixation, yönlendirme</td><td class="muted">Güncel framework API'si</td></tr>
+          <tr><td>XSS'e dönüşme</td><td>Script çalıştırma</td><td class="muted">Girdi doğrulama + CSP</td></tr>
+          <tr><td>Log injection</td><td>Adli analizi yanıltma</td><td class="muted">Log'da satır sonu kodlama, JSON log</td></tr>
+          <tr><td>SMTP başlık enjeksiyonu</td><td>Spam, yetkisiz alıcı</td><td class="muted">Mail başlık alanlarını doğrulama</td></tr>
+          <tr><td>Protokol enjeksiyonu (SSRF ile)</td><td>İç servis komutları</td><td class="muted">URL doğrulama, SSRF savunması</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="note"><b>Not:</b> Testleri yalnızca kendi sistemlerinizde veya yazılı izniniz olan sistemlerde yapın. Yetkisiz test birçok yargı alanında suç teşkil eder.</div>
+
+</div>
+
+</body></html>

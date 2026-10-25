@@ -1,0 +1,548 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Clickjacking: UI Redress</title>
+<style>
+/* Layout: single-column technical dossier — terminal-style header band,
+   numbered findings as the spine, code blocks treated as evidence panels */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  --warn:#9a7b2f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    --warn:#d6ad5e;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  --warn:#d6ad5e;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+.kv{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 18px;
+  margin:18px 0;
+}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;color:var(--ink)}
+
+pre{
+  background:var(--code-bg);
+  color:var(--code-fg);
+  border-radius:10px;
+  padding:18px 20px;
+  overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  line-height:1.6;
+  margin:0 0 16px;
+  border:1px solid var(--line);
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+pre .ok{color:var(--ok)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+.code-label.ok{color:var(--ok)}
+
+.finding{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.finding h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.finding h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.finding p{margin-bottom:0;font-size:14.5px}
+.finding p + p{margin-top:8px}
+
+/* variant grid */
+.variants{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+@media (max-width:560px){.variants{grid-template-columns:1fr}}
+.variant{
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 18px;
+  background:var(--surface);
+  min-width:0;
+}
+.variant .vnum{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  color:var(--accent);
+  letter-spacing:.06em;
+}
+.variant h4{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:15.5px;
+  font-weight:600;
+  margin:4px 0 6px;
+}
+.variant p{font-size:13.5px;margin:0;color:var(--muted);line-height:1.5}
+
+/* clickjacking demo visual */
+.demo{
+  position:relative;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:28px;
+  margin:20px 0;
+  overflow:hidden;
+}
+.demo-stage{
+  position:relative;
+  height:140px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.demo-fake{
+  padding:14px 28px;
+  background:var(--accent);
+  color:var(--accent-ink);
+  border-radius:8px;
+  font-weight:600;
+  font-size:15px;
+  box-shadow:0 2px 0 rgba(0,0,0,.15);
+  position:relative;
+  z-index:1;
+}
+.demo-real{
+  position:absolute;
+  padding:14px 28px;
+  border:1.5px dashed var(--bad);
+  border-radius:8px;
+  color:var(--bad);
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  top:50%;left:50%;
+  transform:translate(-50%,-52%) rotate(-2deg);
+  z-index:2;
+  background:color-mix(in srgb, var(--bad) 8%, transparent);
+  white-space:nowrap;
+}
+.demo-caption{
+  text-align:center;
+  font-size:12.5px;
+  color:var(--muted);
+  margin-top:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+}
+
+.flow{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.flow-step{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line);min-width:0}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{width:28px;height:28px;border-radius:50%;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;flex:none}
+.flow-body{min-width:0}
+.flow-who{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.flow-text{font-size:14.5px;line-height:1.55}
+
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.55;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.checklist .mark{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;color:var(--accent);flex:none;margin-top:2px}
+
+.defense{display:grid;gap:10px}
+.defense-row{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px;border-left:3px solid var(--ok);background:var(--surface);border-radius:0 10px 10px 0}
+.defense-row.warn{border-left-color:var(--warn)}
+.defense-row b{font-size:14.5px;display:flex;align-items:center;gap:8px}
+.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.5}
+.eff{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:10.5px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  padding:2px 8px;
+  border-radius:100px;
+  background:color-mix(in srgb, var(--ok) 16%, transparent);
+  color:var(--ok);
+}
+.eff.low{
+  background:color-mix(in srgb, var(--warn) 18%, transparent);
+  color:var(--warn);
+}
+
+/* summary table */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:480px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line)}
+th{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  background:var(--surface);
+}
+tr:last-child td{border-bottom:none}
+td{color:var(--ink)}
+td.muted{color:var(--muted);font-size:13px}
+
+.note{
+  margin-top:56px;
+  padding:18px 20px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.6;
+}
+.note b{color:var(--ink)}
+
+@media (max-width:520px){
+  .kv{grid-template-columns:1fr;font-size:12.5px}
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Zafiyet Notu</div>
+  <h1>Clickjacking: UI Redress Saldırısı</h1>
+  <p class="dek">Kullanıcının gördüğü arayüz ile gerçekte tıkladığı öğenin birbirinden ayrılması — şeffaf iframe katmanlarıyla kurbanın kendi yetkisiyle istemeden eylem yaptırılması.</p>
+
+  <div class="meta-row">
+    <span class="chip">UI Redress Attack</span>
+    <span class="chip">iframe Embedding</span>
+    <span class="chip">OWASP Kategorisi</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Mekanizma</h2></div>
+    <p>Tarayıcıların bir sayfayı başka bir sayfanın içine <code class="inline">&lt;iframe&gt;</code> ile gömebilmesine dayanır. Saldırgan hedef siteyi şeffaf bir iframe olarak kendi sahte sayfasının üzerine yerleştirir; kullanıcı gördüğü sahte butona tıkladığını sanır, ama tıklama görünmeyen iframe içindeki gerçek öğeye gider.</p>
+    <p class="lede">Kullanıcı hedef sitede zaten oturum açmışsa, işlem kullanıcının kendi yetkisiyle ve kendi çerezleriyle gerçekleşir — sunucu açısından meşru bir istektir.</p>
+
+    <div class="demo">
+      <div class="demo-stage">
+        <div class="demo-fake">Ödülünü Al!</div>
+        <div class="demo-real">hedef-site.com/islem — gerçek buton (opacity: 0)</div>
+      </div>
+      <div class="demo-caption">görünen katman — altında hizalanmış gerçek iframe</div>
+    </div>
+
+    <div class="code-label bad"><span class="dot"></span>Kavramsal yapı</div>
+    <pre>&lt;style&gt;
+  iframe {
+    position: absolute;
+    opacity: <span class="hl">0</span>;        <span class="c">/* görünmez */</span>
+    z-index: 2;        <span class="c">/* sahte içeriğin üstünde */</span>
+  }
+  .sahte-buton {
+    position: absolute;
+    z-index: 1;
+  }
+&lt;/style&gt;
+
+&lt;button class="sahte-buton"&gt;Ödülünü Al!&lt;/button&gt;
+&lt;iframe src="https://hedef-site.com/islem"&gt;&lt;/iframe&gt;</pre>
+    <p class="lede">Kritik nokta: iframe'in konumu, hedef sitedeki gerçek butonun tam olarak sahte butonun altına denk gelecek şekilde piksel hassasiyetinde ayarlanır.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Saldırı Akışı</h2></div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-body"><div class="flow-who">Saldırgan</div><div class="flow-text">cazip görünen sahte bir sayfa hazırlar ("Ödül kazandın!" gibi).</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-body"><div class="flow-who">Saldırgan</div><div class="flow-text">hedef siteyi şeffaf bir iframe olarak gömer, CSS ile sahte butonun üstüne hizalar.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-body"><div class="flow-who">Kurban</div><div class="flow-text">zaten hedef sitede oturum açmış durumdadır, sayfayı ziyaret eder.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-body"><div class="flow-who">Kurban</div><div class="flow-text">sahte butona tıklar; tıklama görünmez iframe içindeki gerçek öğeye gider.</div></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-body"><div class="flow-who">hedef-site.com</div><div class="flow-text">geçerli çerezle gelen isteği meşru kabul eder, işlemi kurbanın yetkisiyle gerçekleştirir.</div></div>
+      </div>
+    </div>
+    <div class="note"><b>Sınırlama:</b> Clickjacking veri okuyamaz, yalnızca kullanıcının yapabileceği bir eylemi tetikler. Etkisi, hedef sitedeki tek tıklamayla tamamlanabilen işlemlerle sınırlıdır.</div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Saldırı Türleri</h2></div>
+    <div class="variants">
+      <div class="variant"><div class="vnum">01</div><h4>Klasik Clickjacking</h4><p>Şeffaf iframe yöntemiyle sahte buton üzerinden gerçek öğeye tıklatma.</p></div>
+      <div class="variant"><div class="vnum">02</div><h4>Likejacking</h4><p>Kullanıcının farkında olmadan bir sosyal medya sayfasını beğenmesi veya takip etmesi sağlanır.</p></div>
+      <div class="variant"><div class="vnum">03</div><h4>Cursorjacking</h4><p>İmlecin görünen konumu gerçek konumundan kaydırılır; tıklama başka bir noktaya gider.</p></div>
+      <div class="variant"><div class="vnum">04</div><h4>Cookiejacking</h4><p>Kullanıcıyı iframe içindeki çerez verisini sürükleyip bırakmaya kandırarak çerez çalma.</p></div>
+      <div class="variant"><div class="vnum">05</div><h4>Filejacking</h4><p>Kullanıcıyı farkında olmadan dosya sistemine erişim izni vermeye yönlendirme.</p></div>
+      <div class="variant"><div class="vnum">06</div><h4>Drag-and-drop / Strokejacking</h4><p>Sürükle-bırak veya klavye girdisiyle gizli bir alana veri girdirme.</p></div>
+      <div class="variant"><div class="vnum">07</div><h4>Multi-step Clickjacking</h4><p>"Sil" → "Onayla" gibi çok adımlı işlemler için art arda gizli katmanlar kullanma.</p></div>
+      <div class="variant"><div class="vnum">08</div><h4>Tapjacking (Mobil)</h4><p>Android'de yarı şeffaf bir overlay ile dokunmaların başka uygulamaya yönlendirilmesi.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Gerçek Dünya Etkileri</h2></div>
+    <ul class="checklist">
+      <li><span class="mark">—</span><span>Hesap silme veya ayar değiştirme</span></li>
+      <li><span class="mark">—</span><span>Para transferi veya ödeme onayı verme</span></li>
+      <li><span class="mark">—</span><span>Sosyal medyada paylaşım yapma, birini takip ettirme</span></li>
+      <li><span class="mark">—</span><span>Kamera/mikrofon izni verdirme</span></li>
+      <li><span class="mark">—</span><span>OAuth uygulama yetkilendirmesi onaylatma</span></li>
+      <li><span class="mark">—</span><span>Yönetim panelinde kullanıcı ekleme veya yetki verdirme</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Savunma Yöntemleri</h2></div>
+
+    <div class="finding">
+      <h3><span class="idx">A</span>X-Frame-Options</h3>
+      <p>Sunucu, sayfasının iframe içinde gösterilip gösterilemeyeceğini HTTP başlığıyla belirtir. Eski ama hâlâ yaygın bir koruma.</p>
+      <div class="code-label ok"><span class="dot"></span>HTTP Response Header</div>
+      <pre>X-Frame-Options: <span class="ok">DENY</span>          <span class="c">/* hiçbir yerde gömülemez */</span>
+X-Frame-Options: <span class="ok">SAMEORIGIN</span>    <span class="c">/* yalnızca aynı origin'den */</span></pre>
+      <p class="lede"><code class="inline">ALLOW-FROM</code> seçeneği artık modern tarayıcılarda desteklenmiyor.</p>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">B</span>CSP frame-ancestors</h3>
+      <p>Modern ve önerilen yöntem. X-Frame-Options'tan daha esnektir — birden fazla güvenilir kaynak belirtilebilir.</p>
+      <div class="code-label ok"><span class="dot"></span>HTTP Response Header</div>
+      <pre>Content-Security-Policy: frame-ancestors <span class="ok">'none'</span>;
+Content-Security-Policy: frame-ancestors <span class="ok">'self'</span>;
+Content-Security-Policy: frame-ancestors <span class="ok">https://guvenilir-site.com</span>;</pre>
+      <p class="lede">Destekleyen tarayıcılarda CSP öncelik alır. Eski tarayıcı uyumluluğu için ikisini birlikte göndermek iyi pratiktir.</p>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">C</span>SameSite Çerez Özelliği</h3>
+      <p>Cross-site iframe içindeki istekte oturum çerezinin gönderilmesini engeller — kullanıcı oturum açmış görünmez, işlem yetkisiz kalır.</p>
+      <div class="code-label ok"><span class="dot"></span>HTTP Response Header</div>
+      <pre>Set-Cookie: session=abc123; SameSite=<span class="ok">Lax</span>; Secure; HttpOnly</pre>
+      <p class="lede">Modern tarayıcılar çerezlere varsayılan olarak <code class="inline">Lax</code> uygular; kritik işlemler için <code class="inline">Strict</code> değerlendirilebilir.</p>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">D</span>Frame Busting (eski JS yöntemi)</h3>
+      <p>Sayfa bir iframe içinde açılmışsa kendini en üste taşımaya çalışır. <strong>Güvenilir değildir</strong> — saldırgan iframe'e sandbox özelliği ekleyerek veya <code class="inline">onbeforeunload</code> ile yönlendirmeyi engelleyerek atlatabilir.</p>
+      <div class="code-label"><span class="dot"></span>JavaScript</div>
+      <pre>if (window.top !== window.self) {
+  window.top.location = window.self.location;
+}</pre>
+      <p class="lede">Yalnızca ek önlem olarak düşünülmeli, tek başına yeterli görülmemelidir.</p>
+    </div>
+
+    <div class="defense">
+      <div class="defense-row"><b>Kritik işlemlerde ek doğrulama <span class="eff">yüksek etki</span></b><span>Silme veya para gönderme gibi yıkıcı işlemlerde şifre, 2FA veya CAPTCHA istemek; hassas butonlar için ek onay adımları eklemek.</span></div>
+      <div class="defense-row warn"><b>Tarayıcı tarafı korumalar <span class="eff low">destekleyici</span></b><span>Bazı eklentiler (NoScript ClearClick gibi) gizli çerçeveleri tespit edebilir, ama bunlara güvenmek yerine sunucu tarafında önlem almak gerekir.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">06</span><h2>Test Etme</h2></div>
+    <p class="lede">Kendi uygulamanızın savunmasını kontrol etmek için:</p>
+    <ul class="checklist">
+      <li><span class="mark">01</span><span>Sayfanızı başka bir domainden basit bir <code class="inline">&lt;iframe src="..."&gt;</code> ile gömmeyi deneyin — gömülemiyorsa koruma çalışıyordur.</span></li>
+      <li><span class="mark">02</span><span>Yanıt başlıklarını <code class="inline">curl -I https://siteniz.com</code> ile kontrol edin; <code class="inline">X-Frame-Options</code> veya <code class="inline">frame-ancestors</code> var mı bakın.</span></li>
+      <li><span class="mark">03</span><span>Tarayıcı geliştirici araçlarında Network sekmesinden başlıkları inceleyin.</span></li>
+      <li><span class="mark">04</span><span>OWASP ZAP veya Burp Suite gibi araçlar bu başlıkların eksikliğini otomatik tespit eder.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">07</span><h2>Özet Tablo</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Savunma</th><th>Etkinlik</th><th>Not</th></tr></thead>
+        <tbody>
+          <tr><td>CSP frame-ancestors</td><td>Çok yüksek</td><td class="muted">Modern standart, önerilen</td></tr>
+          <tr><td>X-Frame-Options</td><td>Yüksek</td><td class="muted">Eski tarayıcılar için de ekleyin</td></tr>
+          <tr><td>SameSite çerezler</td><td>Yüksek</td><td class="muted">Ek katman olarak çok değerli</td></tr>
+          <tr><td>Kritik işlemde ek doğrulama</td><td>Yüksek</td><td class="muted">Etki alanını daraltır</td></tr>
+          <tr><td>Frame busting JS</td><td>Düşük</td><td class="muted">Atlatılabilir, tek başına yetersiz</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="note"><b>Kısa öneri:</b> Tüm sayfalarda <code class="inline">Content-Security-Policy: frame-ancestors 'none'</code> (veya <code class="inline">'self'</code>) gönderin, geriye uyumluluk için <code class="inline">X-Frame-Options</code> ekleyin, oturum çerezlerinde <code class="inline">SameSite</code> kullanın ve kritik işlemlerde ek doğrulama isteyin. Sayfanın başka sitelerde gömülmesi gerekiyorsa, yalnızca güvenilir origin'leri <code class="inline">frame-ancestors</code> ile izin listesine alın. Test yalnızca kendi sistemlerinizde veya yazılı izniniz olan sistemlerde yapılmalıdır.</div>
+
+</div>
+
+</body></html>

