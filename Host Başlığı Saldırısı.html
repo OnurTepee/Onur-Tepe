@@ -1,0 +1,368 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Host Başlığı Saldırısı</title>
+<style>
+/* Layout: ders-notu format — CORS notuyla aynı tema; kavram tanımı üstte,
+   manipülasyon yöntemleri evidence-panel, saldırı türleri checklist olarak */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+h3.sub{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:18px;
+  margin:28px 0 12px;
+  letter-spacing:-.005em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+pre{
+  background:var(--code-bg);
+  color:var(--code-fg);
+  border-radius:10px;
+  padding:18px 20px;
+  overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  line-height:1.6;
+  margin:0 0 16px;
+  border:1px solid var(--line);
+  min-width:0;
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+pre .ok{color:var(--ok)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+.code-label.ok{color:var(--ok)}
+
+/* method cards (yöntem 1/2/3) */
+.method{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.method h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.method h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.method p{margin-bottom:0;font-size:14.5px}
+.method p + p{margin-top:8px}
+.method pre{margin-top:12px;margin-bottom:0}
+
+/* saldırı türleri listesi */
+.attack-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.attack-list li{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  font-size:14.5px;
+  line-height:1.55;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.attack-list .mark{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent);
+  flex:none;
+  margin-top:2px;
+  min-width:20px;
+}
+.attack-list b{display:block;margin-bottom:3px}
+.attack-list span.desc{color:var(--muted);font-size:13.5px}
+
+.kv{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 16px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 18px;
+  margin:18px 0;
+}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;color:var(--ink)}
+
+.note{
+  margin-top:56px;
+  padding:18px 20px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.6;
+}
+.note b{color:var(--ink)}
+
+@media (max-width:520px){
+  .kv{grid-template-columns:1fr;font-size:12.5px}
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Ders Notu</div>
+  <h1>HTTP Host Başlığı Saldırısı Nedir?</h1>
+  <p class="dek">Host başlık saldırısı (OWASP'taki adıyla Host Header Injection), HTTP isteğindeki Host değerinin ya da bu değerin yerine geçen başlıkların saldırgan tarafından değiştirilmesidir. Zafiyet başlığın kendisinde değil, uygulamanın bu değere körü körüne güvenmesindedir. Saldırı sonucu, uygulamanın bu değeri nerede kullandığına bağlıdır.</p>
+
+  <div class="meta-row">
+    <span class="chip">Host Header Injection</span>
+    <span class="chip">Virtual Hosting</span>
+    <span class="chip">OWASP</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Host Başlığının İşlevi</h2></div>
+    <p>Bir web sunucusu aynı IP adresi üzerinde birden fazla siteyi barındırabilir (sanal host, virtual hosting). Sunucu, gelen isteğin hangi siteye ait olduğunu Host başlığına bakarak anlar:</p>
+    <div class="code-label"><span class="dot"></span>Örnek istek</div>
+    <pre>GET /samples/snippet.html HTTP/1.1
+Host: www.example.com</pre>
+    <p>Bu istek, "www.example.com sitesindeki /samples/snippet.html kaynağını ver" demektir.</p>
+    <p class="lede">Uygulamalar da bu değere ihtiyaç duyabilir. Örneğin e-postadaki şifre sıfırlama linkinde, mutlak URL oluşturmak için kendi alan adını bilmeleri gerekir. Geliştiriciler bunu kolay yoldan, yani gelen isteğin Host başlığından alır. Zafiyet buradan doğar.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Host Başlığı Nasıl Manipüle Edilir?</h2></div>
+    <p>Değeri değiştirmek kolaydır. cURL, telnet veya Burp Suite ile istek elle gönderilebilir. Asıl zorluk, isteğin hedef uygulamaya ulaşmasıdır. Üç yöntem vardır.</p>
+
+    <div class="method">
+      <h3><span class="idx">1</span>Doğrudan sahte Host göndermek</h3>
+      <p>Host değeri bozuksa veya sunucuda tanımlı değilse çoğu sunucu isteği listedeki ilk sanal hosta yönlendirir. Bu durumda rastgele Host değeri yalnızca o ilk siteye gönderilebilir. Bazı sunucular bilinmeyen Host değerlerini tamamen reddeder ve bu yol kapanır.</p>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">2</span>Host override başlıkları</h3>
+      <p>Sunucu veya proxy <code class="inline">X-Forwarded-Host</code> gibi başlıkları destekliyorsa, bu başlığın değeri asıl Host değerinin yerine geçer:</p>
+      <div class="code-label bad"><span class="dot"></span>İstek</div>
+      <pre>GET /index.php HTTP/1.1
+Host: www.example.com
+X-Forwarded-Host: <span class="hl">www.vulnweb.com</span></pre>
+      <p>Yönlendirme meşru Host ile yapılır, ama uygulama linkleri X-Forwarded-Host'a göre üretir.</p>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">3</span>Çift Host başlığı</h3>
+      <p>Sistemler birden fazla Host başlığını farklı yorumlayabilir:</p>
+      <div class="code-label bad"><span class="dot"></span>İstek</div>
+      <pre>GET /index.php HTTP/1.1
+Host: www.example.com
+Host: <span class="hl">www.vulnweb.com</span></pre>
+      <p>Örneğin ön taraftaki sunucu ilk Host'u, arkadaki uygulama son Host'u kullanırsa tutarsızlık oluşur ve zafiyet doğar.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Saldırı Türleri</h2></div>
+    <p class="lede">Uygulamanın güvenilmeyen Host değerini nerede kullandığına göre, aynı zafiyet farklı sonuçlara yol açabilir.</p>
+    <ul class="attack-list">
+      <li>
+        <span class="mark">01</span>
+        <span><b>Şifre sıfırlama zehirlenmesi</b><span class="desc">Sıfırlama linki, güvenilmeyen Host değeriyle üretilip kullanıcıya gönderilir; link saldırganın sunucusuna işaret eder.</span></span>
+      </li>
+      <li>
+        <span class="mark">02</span>
+        <span><b>Web önbellek zehirlenmesi</b><span class="desc">Zehirli Host değeri önbelleğe alınan bir yanıta işlenir ve sonraki ziyaretçilere o haliyle sunulur.</span></span>
+      </li>
+      <li>
+        <span class="mark">03</span>
+        <span><b>SQL Injection</b><span class="desc">Host değeri loglama veya sorgu oluşturma sırasında filtrelenmeden veritabanı katmanına ulaşırsa.</span></span>
+      </li>
+      <li>
+        <span class="mark">04</span>
+        <span><b>OS Command Injection</b><span class="desc">Host değeri sunucu tarafında bir komuta parametre olarak geçiyorsa.</span></span>
+      </li>
+      <li>
+        <span class="mark">05</span>
+        <span><b>İç sistemlere erişim</b><span class="desc">Routing veya yönlendirme mantığı Host değerine göre çalışıyorsa, normalde dışarıdan erişilemeyen iç uç noktalara ulaşılabilir.</span></span>
+      </li>
+      <li>
+        <span class="mark">06</span>
+        <span><b>SSRF (Server-Side Request Forgery)</b><span class="desc">Uygulama, Host değerine dayanarak kendi sunucusundan başka bir adrese istek yapıyorsa, bu adres saldırgan tarafından yönlendirilebilir.</span></span>
+      </li>
+    </ul>
+  </section>
+
+  <div class="note"><b>Not:</b> Zafiyetin kök nedeni her zaman aynıdır: istemciden gelen bir değere (Host veya onun yerine geçen bir başlığa) uygulama mantığında doğrulama yapılmadan güvenilmesi. Savunma tarafında tipik yaklaşım, mutlak URL üretiminde Host başlığı yerine sunucu tarafında sabitlenmiş bir yapılandırma değeri kullanmak ve beklenmeyen Host değerlerini reddetmektir.</div>
+
+</div>
+
+</body></html>
