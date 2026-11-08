@@ -1,0 +1,385 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>SQL Enjeksiyonu</title>
+<style>
+/* Layout: seri ile aynı ders-notu teması; güvenlik seviyeleri method-card,
+   hata tabanlı SQLi akışı flow-step olarak */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+  overflow-wrap:anywhere;
+}
+
+/* özet listesi (üst kısım) */
+.summary-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.summary-list li{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  font-size:14.5px;
+  line-height:1.55;
+  padding:12px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.summary-list .mark{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent);
+  flex:none;
+  margin-top:2px;
+}
+
+/* güvenlik seviyesi kartları */
+.method{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.method h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.method h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.method > p{margin-bottom:12px;font-size:14.5px}
+.method .sub-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.method .sub-list li{
+  font-size:14px;
+  line-height:1.55;
+  padding:10px 14px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+.method.bad{border-left:3px solid var(--bad)}
+.method.warn{border-left:3px solid #b58b2f}
+.method.ok{border-left:3px solid var(--ok)}
+
+/* flow (hata tabanlı SQLi adımları) */
+.flow{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  margin:20px 0;
+}
+.flow-step{
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:14px;
+  padding:14px 0;
+  border-bottom:1px dashed var(--line);
+  min-width:0;
+}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--surface);
+  border:1.5px solid var(--accent);
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  flex:none;
+}
+.flow-body{min-width:0}
+.flow-who{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:3px;
+}
+.flow-text{font-size:14.5px;line-height:1.55}
+
+.sources{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.sources li{
+  border:1px solid var(--line);
+  background:var(--surface);
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13.5px;
+  overflow-wrap:anywhere;
+}
+.sources a{color:var(--accent);text-decoration:none}
+.sources a:hover{text-decoration:underline}
+
+@media (max-width:520px){
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Ders Notu</div>
+  <h1>SQL Enjeksiyonu (SQL Injection) Nedir?</h1>
+  <p class="dek">SQL Enjeksiyonu (SQLi), web uygulamalarındaki bir güvenlik açığıdır. Saldırganlar, kullanıcı girdileri aracılığıyla kötü niyetli SQL sorgularını sisteme enjekte ederek arka uçtaki veritabanı işlemlerini manipüle eder. Bu durum yetkisiz erişime, verilerin değiştirilmesine veya silinmesine yol açabilir. SQL Enjeksiyonu, web uygulamalarındaki en ciddi ve en sık istismar edilen güvenlik açıklarından biridir.</p>
+
+  <div class="meta-row">
+    <span class="chip">SQLi</span>
+    <span class="chip">Error-Based</span>
+    <span class="chip">Input Validation</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Genel Özellikler</h2></div>
+    <ul class="summary-list">
+      <li><span class="mark">—</span><span>Kullanıcı girdilerinin SQL sorgularında doğrulanmamasından kaynaklanan eksikliklerden doğar.</span></li>
+      <li><span class="mark">—</span><span>Şifreler, e-postalar ve finansal bilgiler gibi hassas verilerin ifşa olmasına neden olabilir.</span></li>
+      <li><span class="mark">—</span><span>Kimlik doğrulama mekanizmalarının atlatılmasını (bypass) sağlar.</span></li>
+      <li><span class="mark">—</span><span>Veritabanının veya sunucunun tamamen ele geçirilmesine yol açabilir.</span></li>
+      <li><span class="mark">—</span><span>Güvenli kodlama ve girdi doğrulama yöntemleriyle engellenebilir.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Güvenlik Seviyelerine Göre Davranış</h2></div>
+
+    <div class="method bad">
+      <h3><span class="idx">1</span>Düşük Güvenlik Seviyesi</h3>
+      <p>Bu seviyede kullanıcı girdileri herhangi bir doğrulama veya temizleme işlemine tabi tutulmadan doğrudan SQL sorgusuna eklenir. Bu da sistemi SQL enjeksiyon saldırılarına karşı son derece savunmasız hale getirir.</p>
+      <ul class="sub-list">
+        <li><strong>Girdi</strong> <code class="inline">'</code> — Sorguyu bozar ve veritabanı hatasına neden olur; bu da bir güvenlik açığının varlığını ortaya çıkarır.</li>
+        <li><strong>Girdi</strong> <code class="inline">1' OR '1'='1</code> — Her zaman doğru olan bir koşuldur; tüm kullanıcı kayıtlarını döndürür.</li>
+        <li><strong>Girdi</strong> <code class="inline">1' UNION SELECT user, password FROM users</code> — Kullanıcı adları ve şifreler gibi hassas verileri çıkarır.</li>
+      </ul>
+    </div>
+
+    <div class="method warn">
+      <h3><span class="idx">2</span>Orta Düzeyde Güvenlik</h3>
+      <p>Bu seviyede <code class="inline">addslashes()</code> gibi fonksiyonlar kullanılarak girdiler temel düzeyde düzenlenir. Bu fonksiyonlar tek tırnak (<code class="inline">'</code>) gibi özel karakterlerin önüne ters eğik çizgi ekleyerek onları işler.</p>
+      <ul class="sub-list">
+        <li><code class="inline">'</code> karakteri <code class="inline">\'</code> olarak dönüştürülür ve basit enjeksiyon girişimleri nötralize edilir.</li>
+        <li>Ancak saldırganlar, tırnak işareti gerektirmeyen sayısal parametreler üzerinden yapılan saldırılarla bu korumayı yine de aşabilir.</li>
+      </ul>
+    </div>
+
+    <div class="method ok">
+      <h3><span class="idx">3</span>Yüksek Güvenlik Seviyesi</h3>
+      <p>Bu seviyede uygulama, SQL mantığını kullanıcı girdilerinden ayıran hazırlanmış ifadeleri (parametreli sorguları) kullanır.</p>
+      <ul class="sub-list">
+        <li>Girdiler yalnızca veri olarak kabul edilir; yürütülebilir SQL kodu olarak değerlendirilmez.</li>
+        <li><code class="inline">'</code>, <code class="inline">OR 1=1</code> veya <code class="inline">UNION SELECT</code> gibi yaygın enjeksiyon girişimleri etkisiz kalır.</li>
+        <li>Yetkisiz veri çekilmesini ve sorguların değiştirilmesini engeller.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>1. Hata Tabanlı SQL Enjeksiyonu (Error-Based SQLi)</h2></div>
+    <p>Hata tabanlı SQL enjeksiyonu, saldırganın veritabanının hata mesajları üretmesine kasıtlı olarak neden olduğu bir SQL enjeksiyonu türüdür. Saldırgan bu hata mesajlarını analiz ederek tablo adları ve sütun adları gibi veritabanının yapısına dair değerli bilgiler elde eder. Bu bilgiler daha sonraki saldırılarda kullanılabilir.</p>
+
+    <h3 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;margin:28px 0 12px;letter-spacing:-.005em">Nasıl Çalışır?</h3>
+    <p class="lede">Bu saldırı, genel hata mesajları yerine veritabanındaki hataları doğrudan gösteren uygulamaları hedef alır. SQL sözdizimini bozan kötü niyetli girdiler enjekte edilerek bu hatalar tetiklenir ve veritabanının yapısı hakkında bilgi toplanır.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-body">
+          <div class="flow-who">Kötü Amaçlı Girdilerin Enjekte Edilmesi</div>
+          <div class="flow-text">Saldırgan, normal sorgu işleyişini bozmak için özel karakterler (örneğin tek tırnak işareti <code class="inline">'</code>) veya hatalı biçimlendirilmiş SQL sorguları kullanır.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-body">
+          <div class="flow-who">Veritabanı Hatalarının Tetiklenmesi</div>
+          <div class="flow-text">Yanlış sorgu sözdizimi veya yapısı nedeniyle veritabanı hata mesajları döndürür.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-body">
+          <div class="flow-who">Hata Mesajlarının Analiz Edilmesi</div>
+          <div class="flow-text">Bu hatalar; veritabanı türünü (MySQL, Oracle, SQL Server vb.), veritabanı sürümünü, SQL sorgusunun yapısını, tablo ve sütun adlarını ortaya çıkarabilir.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-body">
+          <div class="flow-who">Saldırının Geliştirilmesi</div>
+          <div class="flow-text">Elde ettiği bilgileri kullanan saldırgan, veri çalma gibi daha gelişmiş saldırılar gerçekleştirmek için kullandığı payload'ı (saldırı girdisini) değiştirir.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Kaynakça</h2></div>
+    <ul class="sources">
+      <li><a href="https://www.geeksforgeeks.org/sql/sql-injection/" target="_blank" rel="noopener">geeksforgeeks.org/sql/sql-injection</a></li>
+    </ul>
+  </section>
+
+</div>
+
+</body></html>
