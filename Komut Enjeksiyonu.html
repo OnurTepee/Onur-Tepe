@@ -1,0 +1,341 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Komut Enjeksiyonu</title>
+<style>
+/* Layout: seri ile aynı ders-notu teması; zafiyet örnekleri method-card olarak,
+   kod bloklarında satır başı taşma için overflow-x korunuyor */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+pre{
+  background:var(--code-bg);
+  color:var(--code-fg);
+  border-radius:10px;
+  padding:18px 20px;
+  overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  line-height:1.6;
+  margin:0 0 16px;
+  border:1px solid var(--line);
+  min-width:0;
+}
+pre .c{color:var(--code-dim)}
+pre .hl{color:var(--accent)}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+  overflow-wrap:anywhere;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.code-label.bad{color:var(--bad)}
+
+/* zafiyet örnekleri */
+.method{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.method h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.method h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.method p{margin-bottom:0;font-size:14.5px}
+.method p + p{margin-top:8px}
+.method pre{margin-top:12px;margin-bottom:0}
+
+/* liste */
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  font-size:14.5px;
+  line-height:1.55;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.checklist .mark{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent);
+  flex:none;
+  margin-top:2px;
+}
+
+.note{
+  margin-top:0;
+  margin-bottom:40px;
+  padding:18px 20px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  font-size:14.5px;
+  color:var(--ink);
+  line-height:1.6;
+}
+
+@media (max-width:520px){
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Ders Notu</div>
+  <h1>Komut Enjeksiyonu Nedir?</h1>
+  <p class="dek">Komut enjeksiyonu, bir ana bilgisayarın işletim sisteminde keyfi komutların çalıştırılmasını içeren bir siber saldırıdır. Genellikle saldırganlar, yetersiz girdi doğrulaması gibi uygulamadaki güvenlik açıklarından yararlanarak bu komutları sisteme enjekte eder.</p>
+
+  <div class="meta-row">
+    <span class="chip">OS Command Injection</span>
+    <span class="chip">system() / exec()</span>
+    <span class="chip">Privilege Escalation</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Kod Enjeksiyonu vs. Komut Enjeksiyonu</h2></div>
+    <p>Kod enjeksiyonu, bir uygulama tarafından yorumlanan veya çalıştırılan kodun sisteme enjekte edilmesini içeren her türlü saldırı için kullanılan genel bir terimdir. Bir saldırgan uygulamaya PHP kodu enjekte edip bunu çalıştırabilse bile, zararlı kodun etkisi PHP'nin işlevleri ve ana bilgisayarda PHP'ye verilen izinlerle sınırlı kalır.</p>
+    <p class="lede">Komut enjeksiyonu ise genellikle bir sistemin komut satırında veya ortamın diğer bölümlerinde komutların yürütülmesini içerir.</p>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Komut Enjeksiyonu Zafiyetlerine Örnekler</h2></div>
+
+    <div class="method">
+      <h3><span class="idx">A</span>Komut Argümanı Olarak Dosya Adı</h3>
+      <p>Aşağıda, uzaktaki kullanıcıların bir dosyanın içeriğini görüntülemesine izin veren, ancak dosyayı değiştirmelerine veya silmelerine izin vermeyen bir program örneği yer alıyor. Bu program root yetkileriyle çalışıyor.</p>
+      <div class="code-label"><span class="dot"></span>c</div>
+      <pre>int main(int argc, char** argv) {
+    char cmd[CMD_MAX] = "/usr/bin/cat ";
+    strcat(cmd, argv[1]);
+    system(cmd);
+}</pre>
+      <p>Bu program zararsız gibi görünse de (yalnızca dosyalara salt okunur erişim sağlar), aslında komut enjeksiyonu saldırılarına olanak tanır. Saldırgan bir dosya adı yerine şu dizeyi girerse:</p>
+      <div class="code-label bad"><span class="dot"></span>Girdi</div>
+      <pre>;rm -rf /</pre>
+      <p><code class="inline">system()</code> çağrısında <code class="inline">cat</code> komutu argüman eksikliği nedeniyle çalışmaz, ardından işletim sistemi kök disk bölümünün içeriğini özyinelemeli olarak siler.</p>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">B</span>APPHOME Ortam Değişkeninin Değiştirilmesi</h3>
+      <p>Aşağıdaki kod parçası, <code class="inline">$APPHOME</code> ortam değişkenini kullanarak belirli bir uygulamanın yükleme dizinini belirler ve bu dizinde bir betik çalıştırır.</p>
+      <div class="code-label"><span class="dot"></span>c</div>
+      <pre>...
+char* home = getenv("APPHOME");
+char* cmd = (char*)malloc(strlen(home) + strlen(INITCMD));
+if (cmd) {
+    strcpy(cmd, home);
+    strcat(cmd, INITCMD);
+    execl(cmd, NULL);
+}
+...</pre>
+      <p>Sorun şu ki bu kod, başlatma betiğinin içeriğini doğrulamıyor. Saldırgan <code class="inline">$APPHOME</code> değişkenini kötü niyetli bir betiğin bulunduğu farklı bir yola yönlendirebilirse, kod bu betiği çalıştıracaktır. Bu da bir komut enjeksiyonu saldırısıdır.</p>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">C</span>$PATH Değişkeninin Değiştirilmesi</h3>
+      <p>Aşağıdaki kod, bir sunucudaki şifreleri değiştiren ve root yetkileriyle çalışan bir programda kullanılabilir:</p>
+      <div class="code-label"><span class="dot"></span>c</div>
+      <pre>system("cd /var/yp && make &> /dev/null");</pre>
+      <p>Bu kodun sorunlu yanı <code class="inline">make</code> komutunun kullanılmasıdır. Kod kullanıcı girdilerini kabul etmediği için saldırgan kodun kendisini değiştiremez. Ancak <code class="inline">$PATH</code> değişkenini değiştirebilir. Bu durumda komut, saldırganın kontrol ettiği başka bir yol üzerinden yürütülür. Saldırgan, bu klasöre <code class="inline">make</code> ikili dosyasının zararlı bir sürümünü yerleştirebilir. Ebeveyn program root haklarına sahip olduğu için <code class="inline">make</code> programının kötü niyetli sürümü de artık root haklarıyla çalışacaktır.</p>
+    </div>
+
+    <div class="note">Bu üç örneğin ortak sonucu şudur: <code class="inline">system()</code> ve <code class="inline">exec()</code> gibi sistem düzeyindeki fonksiyonları çağıran her komut, kendi içinde çalışan diğer programlara veya komutlara root ayrıcalıklarını verebilir.</div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Komut Enjeksiyonu Yöntemleri</h2></div>
+    <ul class="checklist">
+      <li><span class="mark">—</span><span>Keyfi komut enjeksiyonu</span></li>
+      <li><span class="mark">—</span><span>Keyfi dosya yüklemeleri</span></li>
+      <li><span class="mark">—</span><span>Güvenli olmayan serileştirme</span></li>
+      <li><span class="mark">—</span><span>Sunucu tarafı şablon enjeksiyonu (SSTI)</span></li>
+      <li><span class="mark">—</span><span>XML harici varlık enjeksiyonu (XXE)</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Komut Enjeksiyonunun Önlenmesi</h2></div>
+    <ul class="checklist">
+      <li><span class="mark">—</span><span>Sistem çağrılarından ve kullanıcı girdilerinden kaçının.</span></li>
+      <li><span class="mark">—</span><span>Girdi doğrulaması yapın.</span></li>
+      <li><span class="mark">—</span><span>Sisteme yalnızca önceden onaylanmış girdilerin kabul edilmesini sağlamak için olası girdilerin yer aldığı bir "beyaz liste" oluşturun.</span></li>
+      <li><span class="mark">—</span><span>Sistem komutlarını çalıştırırken yalnızca <code class="inline">execFile()</code> gibi güvenli API'leri kullanın.</span></li>
+      <li><span class="mark">—</span><span><code class="inline">execFile()</code> fonksiyonunu güvenli bir şekilde kullanın.</span></li>
+    </ul>
+  </section>
+
+</div>
+
+</body></html>
