@@ -1,0 +1,427 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Cross-Site Scripting (XSS)</title>
+<style>
+/* Layout: seri ile aynı ders-notu teması; üç XSS türü flow-step olarak,
+   "sıkça görüldüğü yerler" iki sütunlu tag-grid olarak */
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --ink:#1c1b19;
+  --muted:#6b6457;
+  --line:#e2ddd1;
+  --accent:#b5472f;
+  --accent-ink:#ffffff;
+  --code-bg:#1c1b19;
+  --code-fg:#e7e3d8;
+  --code-dim:#8f8a7c;
+  --ok:#3f6b4a;
+  --bad:#b5472f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#161513;
+    --surface:#1e1c19;
+    --ink:#ece7da;
+    --muted:#9b9486;
+    --line:#332f29;
+    --accent:#e07a5f;
+    --accent-ink:#161513;
+    --code-bg:#0f0e0c;
+    --code-fg:#e7e3d8;
+    --code-dim:#776f62;
+    --ok:#6fae7e;
+    --bad:#e07a5f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#161513;
+  --surface:#1e1c19;
+  --ink:#ece7da;
+  --muted:#9b9486;
+  --line:#332f29;
+  --accent:#e07a5f;
+  --accent-ink:#161513;
+  --code-bg:#0f0e0c;
+  --code-fg:#e7e3d8;
+  --code-dim:#776f62;
+  --ok:#6fae7e;
+  --bad:#e07a5f;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+::selection{background:var(--accent);color:var(--accent-ink)}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding-block:48px 80px;
+}
+
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:18px;
+}
+.kicker::before{
+  content:"";
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  flex:none;
+}
+h1{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:clamp(32px,6vw,48px);
+  line-height:1.05;
+  letter-spacing:-.01em;
+  margin:0 0 14px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:17px;
+  line-height:1.6;
+  color:var(--muted);
+  max-width:60ch;
+  margin:0 0 32px;
+}
+.meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:40px;
+}
+.chip{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;
+  letter-spacing:.03em;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--muted);
+  background:var(--surface);
+}
+
+section{margin-top:56px}
+.s-head{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:12px;
+  margin-bottom:22px;
+}
+.s-num{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  color:var(--accent);
+  flex:none;
+}
+h2{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:22px;
+  margin:0;
+  letter-spacing:-.01em;
+}
+h3.sub{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:18px;
+  margin:28px 0 12px;
+  letter-spacing:-.005em;
+}
+p{line-height:1.65;font-size:15.5px;margin:0 0 14px;max-width:68ch}
+strong{font-weight:600}
+.lede{color:var(--muted)}
+
+pre{
+  background:var(--code-bg);
+  color:var(--code-fg);
+  border-radius:10px;
+  padding:14px 18px;
+  overflow-x:auto;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:13px;
+  line-height:1.6;
+  margin:0 0 16px;
+  border:1px solid var(--line);
+  min-width:0;
+}
+code.inline{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  background:var(--surface);
+  border:1px solid var(--line);
+  padding:1px 6px;
+  border-radius:5px;
+  font-size:.9em;
+  overflow-wrap:anywhere;
+}
+.code-label{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.code-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* sonuç listesi (üst) */
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.checklist li{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  font-size:14.5px;
+  line-height:1.55;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.checklist .mark{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent);
+  flex:none;
+  margin-top:2px;
+}
+
+/* xss türü kartları */
+.method{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.method h3{
+  font-family:"Fraunces", Georgia, serif;
+  font-size:17px;
+  margin:0 0 8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.method h3 .idx{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-radius:5px;
+  padding:2px 7px;
+  flex:none;
+}
+.method p{margin-bottom:12px;font-size:14.5px}
+.method .target{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:12.5px;
+  color:var(--muted);
+  margin-bottom:14px;
+}
+.method .target b{color:var(--ink);font-weight:500}
+
+/* flow (adımlar) */
+.flow{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  margin:0 0 14px;
+}
+.flow-step{
+  display:grid;
+  grid-template-columns:26px 1fr;
+  gap:12px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--line);
+  min-width:0;
+}
+.flow-step:last-child{border-bottom:none}
+.flow-dot{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--bg);
+  border:1.5px solid var(--accent);
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;
+  flex:none;
+}
+.flow-text{font-size:14px;line-height:1.55;padding-top:2px}
+
+/* önleme kartları */
+.defense{display:grid;gap:10px}
+.defense-row{
+  padding:14px 16px;
+  border-left:3px solid var(--ok);
+  background:var(--surface);
+  border-radius:0 10px 10px 0;
+}
+.defense-row b{font-size:14.5px;display:block;margin-bottom:4px}
+.defense-row span{font-size:13.5px;color:var(--muted);line-height:1.6}
+
+/* tag grid (sık görülen yerler) */
+.tag-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:10px;
+}
+.tag-item{
+  font-size:13.5px;
+  line-height:1.5;
+  padding:11px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:8px;
+  min-width:0;
+}
+
+.sources{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.sources li{
+  border:1px solid var(--line);
+  background:var(--surface);
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13.5px;
+  overflow-wrap:anywhere;
+}
+.sources a{color:var(--accent);text-decoration:none}
+.sources a:hover{text-decoration:underline}
+
+@media (max-width:520px){
+  h1{font-size:30px}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+
+  <div class="kicker">Web Güvenliği · Ders Notu</div>
+  <h1>Cross-Site Scripting (XSS) Nedir?</h1>
+  <p class="dek">Cross-Site Scripting (XSS), bir saldırganın güvenilir bir web sitesine kötü niyetli istemci tarafı komut dosyaları (script) enjekte etmesine izin veren bir web güvenliği açığıdır. Bu komut dosyaları kurbanın tarayıcısında, web uygulamasıyla aynı izinlerle çalışır.</p>
+
+  <div class="meta-row">
+    <span class="chip">Reflected</span>
+    <span class="chip">Stored</span>
+    <span class="chip">DOM-Based</span>
+  </div>
+
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Bir Saldırgan XSS'den Yararlanarak Neler Yapabilir</h2></div>
+    <ul class="checklist">
+      <li><span class="mark">—</span><span>Oturum çerezlerini çalabilir.</span></li>
+      <li><span class="mark">—</span><span>Kullanıcı hesaplarını ele geçirebilir.</span></li>
+      <li><span class="mark">—</span><span>Başka bir kullanıcı adına işlem yapabilir.</span></li>
+      <li><span class="mark">—</span><span>Web sayfalarının görünümünü değiştirebilir (defacement).</span></li>
+      <li><span class="mark">—</span><span>Kullanıcıları kötü amaçlı web sitelerine yönlendirebilir.</span></li>
+      <li><span class="mark">—</span><span>Kötü amaçlı yazılım veya oltalama (phishing) sayfaları sunabilir.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>XSS Türleri</h2></div>
+    <p class="lede">XSS'in üç türü vardır: Reflected (Yansıyan), Stored (Saklanan) ve DOM Tabanlı.</p>
+
+    <div class="method">
+      <h3><span class="idx">1</span>Reflected XSS (Yansıyan XSS)</h3>
+      <p>Yük (payload) kalıcı olarak depolanmaz. Kurbanın, hazırlanmış bir bağlantıya tıklaması gerekir; saldırının çalışması için bu işlem her seferinde tekrarlanmalıdır.</p>
+      <div class="target">Yaygın hedefler: <b>Arama kutuları, giriş formları, hata mesajları, URL parametreleri</b></div>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-dot">1</div><div class="flow-text">Saldırgan, XSS yükü içeren kötü amaçlı bir URL hazırlar.</div></div>
+        <div class="flow-step"><div class="flow-dot">2</div><div class="flow-text">Kurban bağlantıyı açar.</div></div>
+        <div class="flow-step"><div class="flow-dot">3</div><div class="flow-text">Uygulama yükü sayfaya yansıtır.</div></div>
+        <div class="flow-step"><div class="flow-dot">4</div><div class="flow-text">Tarayıcı enjekte edilen komut dosyasını çalıştırır.</div></div>
+      </div>
+      <div class="code-label"><span class="dot"></span>Örnek</div>
+      <pre>&lt;script&gt;alert('XSS')&lt;/script&gt;</pre>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">2</span>Stored XSS (Saklanan XSS)</h3>
+      <p>Kötü amaçlı girdi uygulama tarafından kalıcı olarak depolanır ve kullanıcılar etkilenen sayfayı ziyaret ettiğinde çalışır. Reflected XSS'in aksine, kurbanın her seferinde hazırlanmış bir bağlantıya tıklamasına gerek yoktur.</p>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-dot">1</div><div class="flow-text">Saldırgan kötü niyetli bir yük gönderir.</div></div>
+        <div class="flow-step"><div class="flow-dot">2</div><div class="flow-text">Uygulama bunu bir veritabanında saklar.</div></div>
+        <div class="flow-step"><div class="flow-dot">3</div><div class="flow-text">Kullanıcılar yükü içeren sayfayı ziyaret eder.</div></div>
+        <div class="flow-step"><div class="flow-dot">4</div><div class="flow-text">Tarayıcı komut dosyasını otomatik olarak çalıştırır.</div></div>
+      </div>
+      <div class="code-label"><span class="dot"></span>Örnek yük</div>
+      <pre>&lt;script&gt;alert('Stored XSS')&lt;/script&gt;</pre>
+    </div>
+
+    <div class="method">
+      <h3><span class="idx">3</span>DOM Tabanlı XSS</h3>
+      <p style="margin-bottom:0">Tarayıcıdaki JavaScript, kullanıcı kontrollü verileri uygun temizleme (sanitization) yapmadan sayfaya eklediğinde ortaya çıkar. Bu durumda açık, sunucu tarafı yanıtlarında değil, istemci tarafı kodunda bulunur.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>XSS Önleme</h2></div>
+    <div class="defense">
+      <div class="defense-row"><b>Girdi Doğrulama (Input Validation)</b><span>Tüm gelen verileri beyaz liste (whitelist) yaklaşımıyla kontrol edin. Örneğin, e-posta alanı yalnızca <code class="inline">^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$</code> regex'iyle eşleşmelidir.</span></div>
+      <div class="defense-row"><b>Çıktı Kaçışı (Output Encoding)</b><span>Veriyi HTML'ye, JavaScript'e, URL'ye veya CSS'ye yazarken ilgili kaçış fonksiyonlarını kullanın. PHP'de <code class="inline">htmlspecialchars()</code>, Node.js'de <code class="inline">escape-html</code> paketi işinizi görecektir.</span></div>
+      <div class="defense-row"><b>Güvenlik Başlıkları (Security Headers)</b><span><code class="inline">Content-Security-Policy</code> ve <code class="inline">X-Content-Type-Options</code> başlıklarını etkinleştirin. CSP, yalnızca güvenilir kaynaklardan script çalıştırılmasını zorunlu kılar ve çoğu Reflected XSS'i engeller.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>XSS'in Sıkça Görüldüğü Yerler</h2></div>
+    <div class="tag-grid">
+      <div class="tag-item">Arama kutuları ve sonuç sayfaları</div>
+      <div class="tag-item">URL parametreleri (<code class="inline">?q=</code>, <code class="inline">?redirect=</code>, <code class="inline">?error=</code>)</div>
+      <div class="tag-item">Hata ve uyarı mesajı sayfaları</div>
+      <div class="tag-item">Yorumlar, forum gönderileri, ürün değerlendirmeleri</div>
+      <div class="tag-item">Profil alanları (ad, biyografi, web sitesi, avatar URL'si)</div>
+      <div class="tag-item">Destek talepleri, mesajlaşma ve iletişim formları</div>
+      <div class="tag-item">HTTP başlıkları (User-Agent, Referer) log ekranlarında gösteriliyorsa</div>
+      <div class="tag-item">Dosya adları ve dosya yükleme (SVG, HTML)</div>
+      <div class="tag-item">Zengin metin (WYSIWYG) ve Markdown çıktıları</div>
+      <div class="tag-item"><code class="inline">innerHTML</code>, <code class="inline">document.write()</code>, <code class="inline">eval()</code> gibi DOM sink'leri</div>
+      <div class="tag-item"><code class="inline">location.hash</code>, <code class="inline">location.search</code>, <code class="inline">postMessage</code> gibi kaynaklar</div>
+      <div class="tag-item"><code class="inline">dangerouslySetInnerHTML</code>, <code class="inline">v-html</code>, <code class="inline">bypassSecurityTrust*</code> kullanımları</div>
+      <div class="tag-item"><code class="inline">href="javascript:..."</code> ve <code class="inline">onerror=</code> gibi HTML öznitelikleri</div>
+      <div class="tag-item"><code class="inline">&lt;script&gt;</code> içine gömülen JSON/değişkenler</div>
+      <div class="tag-item">E-posta şablonları ve PDF oluşturucular</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>Kaynaklar</h2></div>
+    <ul class="sources">
+      <li><strong>Örnek Payloadlar:</strong> <a href="https://github.com/devspidr/XSS_payloads_list/blob/master/xss_payloads.txt" target="_blank" rel="noopener">github.com/devspidr/XSS_payloads_list/blob/master/xss_payloads.txt</a></li>
+      <li><strong>Kaynak:</strong> <a href="https://www.geeksforgeeks.org/ethical-hacking/what-is-cross-site-scripting-xss/" target="_blank" rel="noopener">geeksforgeeks.org/ethical-hacking/what-is-cross-site-scripting-xss</a></li>
+    </ul>
+  </section>
+
+</div>
+
+</body></html>
